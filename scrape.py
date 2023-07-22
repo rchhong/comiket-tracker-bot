@@ -38,5 +38,6 @@ def scrape_url(url):
     genre = relevant_table_children[2].string.strip()
     event = relevant_table_children[3].string.strip()
     is_r18 = info_table.findChildren('td')[-1].string.strip() == "18禁"
+    image_preview_url = f'https:{soup.find("div", {"class": "item-img"}).findChildren("img")[0].attrs["src"]}'
 
-    return title, price_in_yen, circle_name, author_name, genre, event, is_r18
+    return title, price_in_yen, circle_name, author_name, genre, event, is_r18, image_preview_url
