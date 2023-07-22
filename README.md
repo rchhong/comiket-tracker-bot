@@ -7,9 +7,11 @@ Made for Comiket.
 2. Generate a Discord API Token
     1. Create a new application [here](https://discord.com/developers/applications).  Make sure to record the token.  If you forgot, navigate to Bot and reset the token
     2. Enable Message Content Intent (Bot -> Message Content Intent)
-3. Create a `.env` file as follows
+3. Go to https://currency.getgeoapi.com/ and create and account and get an API key
+4. Create a `.env` file as follows
 ```
-TOKEN="<token>"
+TOKEN="<discord token>"
+CURRENCY_API_KEY="<Currency API Key>"
 ```
 4. Invite the bot to your server by generating an OAuth2 link (OAuth2 -> URL Generator), selecting the `bot` scope and enabling the following permissions:
 * Send Messages - this allows for the bot to show a preview of the doujin in the chat
