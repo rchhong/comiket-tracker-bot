@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 
 from scrape import scrape_url
 
-
 load_dotenv()
 
 # Logger
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+discord.utils.setup_logging(handler = handler, root=False)
 
 intents = discord.Intents.default()
 intents.message_content = True
