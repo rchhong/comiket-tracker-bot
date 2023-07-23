@@ -17,7 +17,10 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
-currency = Currency(os.getenv("CURRENCY_API_KEY"))
+CURRENCY_API_KEY = os.getenv("CURRENCY_API_KEY")
+assert CURRENCY_API_KEY is not None
+
+currency = Currency(CURRENCY_API_KEY)
 
 @bot.command()
 async def add(ctx, url):
@@ -31,9 +34,12 @@ async def add(ctx, url):
     )
     embed.set_thumbnail(url=image_preview_url)
     embed.add_field(name="Price (¥)", value=price_in_yen, inline=True)
-    embed.add_field(name="Price ($)", value=price_in_yen * currency.get_rate(), inline=True)
+    embed.add_field(name="Price ($)", value="{:.2f}".format(currency.convert_to(price_in_yen)), inline=True)
     embed.add_field(name="R18?", value="Yes" if is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=genre, inline=False)
     await ctx.send(f'Added {title}', embed=embed)
 
-bot.run(os.getenv("TOKEN"))
+DISCORD_TOKEN = os.getenv("TOKEN")
+assert DISCORD_TOKEN is not None
+
+bot.run(DISCORD_TOKEN)
