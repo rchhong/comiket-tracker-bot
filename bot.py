@@ -40,6 +40,9 @@ async def add(ctx, url):
     title, price_in_yen, circle_name, author_name, \
         genre, _, is_r18, image_preview_url = scrape_url(url)
 
+    price_in_usd = currency.convert_to(price_in_yen)
+    price_in_usd_formatted = "{:.2f}".format(price_in_usd)
+
     # Add embed
     embed=discord.Embed(
         url = url,
@@ -48,14 +51,14 @@ async def add(ctx, url):
 
     embed.set_thumbnail(url=image_preview_url)
     embed.add_field(name="Price (¥)", value=price_in_yen, inline=True)
-    embed.add_field(name="Price ($)", value="{:.2f}".format(currency.convert_to(price_in_yen)), inline=True)
+    embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
     embed.add_field(name="R18?", value="Yes" if is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=genre, inline=False)
     if(url in url_to_index):
         await ctx.send(f'{title} has already been added!', embed=embed)
     else:
         async with url_to_index_lock:
-            await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen)
+            await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, price_in_usd_formatted)
         await ctx.send(f'Added {title}', embed=embed)
 
 DISCORD_TOKEN = os.getenv("TOKEN")

@@ -48,14 +48,14 @@ def generate_url_to_index():
 
         if not values:
             print('No data found.')
-            return
+            return {}
 
         # TODO: Make this a named tuple if more metadata is necessary
         return {data[0]: index + 2 for index, data in enumerate(values)}
     except HttpError as err:
         print(err)
 
-async def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen):
+async def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, price_in_usd_formatted):
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -80,7 +80,7 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
         # Call the Sheets API
         values = [
             [
-                url, title, f"{circle_name} ({author_name})", genre, is_r18, price_in_yen
+                url, title, f"{circle_name} ({author_name})", genre, is_r18, price_in_yen, price_in_usd_formatted
             ],
         ]
         body = {
@@ -88,7 +88,7 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
         }
 
         index_of_new_doujin = len(url_to_index) + 1
-        range_for_new_doujin = f"A{index_of_new_doujin + 1}:F{index_of_new_doujin + 1}"
+        range_for_new_doujin = f"A{index_of_new_doujin + 1}:G{index_of_new_doujin + 1}"
         result = service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID, range=range_for_new_doujin,
             valueInputOption="USER_ENTERED", body=body).execute()
