@@ -1,5 +1,8 @@
 beautifulsoup4==4.12.2
 discord.py==2.3.1
+google_api_python_client==2.94.0
+google_auth_oauthlib==1.0.0
+protobuf==4.23.4
 python-dotenv==1.0.0
 Requests==2.31.0
 urllib3==2.0.4

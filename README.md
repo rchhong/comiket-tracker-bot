@@ -1,7 +1,6 @@
 # Comiket Discord Bot
 This bot automatically facilitates the adding of doujin to a sheet, to which users can express interest in purchasing them.
-Made for Comiket.
-
+Made for Comiket.  Requires Python 3.11 or newer.
 # Setup
 1. `pip3 install -r requirements.txt`
 2. Generate a Discord API Token
