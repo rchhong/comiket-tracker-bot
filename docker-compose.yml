@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  bot:
+    container_name: comiketbot
+    build: 
+      context: .
+    working_dir: /app
+    image: comiketbot
+    command: npx nodemon bot.py
+    environment:
+      DEBUG: 1
+    volumes:
+      - .:/app
+    restart: on-failure
