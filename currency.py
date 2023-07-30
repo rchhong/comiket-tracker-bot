@@ -34,30 +34,28 @@ class Currency:
 
         response = requests.get(url, parameters)
         json = response.json()
-        print(response.json())
         if json["status"] == "success":
             try:
                 self.current_rate = float (json["rates"][self.currency_to]["rate"])
                 self.last_update = datetime.now()
             except Exception:
                 self.logger.error("API May have changed!")
-                
+
                 self.last_update = datetime.min
                 self.current_rate = -1
         else:
             self.logger.error("API Key missing / invalid!")
 
     def get_rate (self, force_update:bool = False) -> float:
-        
+
         if force_update or self.last_update is None or (datetime.now() - self.last_update).seconds > 7200:
             self.update_cache()
-        
+
         return self.current_rate
-    
+
     def convert_to (self, amount:float) -> float:
-        print (amount, self.get_rate())
         return amount * self.get_rate()
-    
+
     def convert_from (self, amount:float) -> float:
         return amount / self.get_rate()
 
@@ -69,4 +67,3 @@ if __name__ == "__main__":
     if (key is not None):
         cur = Currency(key)
         print (cur.get_rate())
-        

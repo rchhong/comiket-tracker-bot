@@ -100,16 +100,16 @@ def generate_url_to_index():
     # TODO: Make this a named tuple if more metadata is necessary
     return {data[0]: index + 2 for index, data in enumerate(raw_values)}
 
-async def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen):
+async def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, price_in_usd):
      # Call the Sheets API
     values = [
         [
-            url, title, f"{circle_name} ({author_name})", genre, is_r18, price_in_yen
+            url, title, f"{circle_name} ({author_name})", genre, is_r18, price_in_yen, price_in_usd
         ],
     ]
 
-    index_of_new_doujin = len(url_to_index) + 1
-    range_for_new_doujin = f"A{index_of_new_doujin + 1}:F{index_of_new_doujin + 1}"
+    index_of_new_doujin = len(url_to_index) + 2
+    range_for_new_doujin = f"A{index_of_new_doujin}:G{index_of_new_doujin}"
     write_to_spreadsheet(SPREADSHEET_ID, range_for_new_doujin, values)
     url_to_index[url] = index_of_new_doujin
 
@@ -141,7 +141,6 @@ def add_user_to_doujin(username_to_index: dict, url_to_index: dict, username: st
             "X"
         ],
     ]
-
     range_to_add = f"{username_to_index[username]}{url_to_index[url]}"
     write_to_spreadsheet(SPREADSHEET_ID, range_to_add, values)
 
