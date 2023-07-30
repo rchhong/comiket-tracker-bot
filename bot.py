@@ -97,7 +97,7 @@ async def add(ctx: discord.ext.commands.Context, url):
         await ctx.send(f'{title} has already been added!', embed=embed, view=view)
     else:
         async with url_to_index_lock:
-            await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, )
+            await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, price_in_usd_formatted)
         await ctx.send(f'Added {title}', embed=embed, view=view)
 
 DISCORD_TOKEN = os.getenv("TOKEN")

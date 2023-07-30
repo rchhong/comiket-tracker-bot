@@ -22,7 +22,7 @@ s.mount('https://www.melonbooks.co.jp', AddedCipherAdapter())
 Doujin = namedtuple('Doujin', ["title", "price_in_yen", "circle_name", "author_name", "genre", "event", "is_r18", "image_preview_url"])
 
 def scrape_url(url: str):
-    page = s.get(url)
+    page = s.get(f"{url}&adult_view=1")
     soup = BeautifulSoup(page.content, features="html.parser")
 
     title = soup.find("h1", {"class": "page-header"}).string.strip()
