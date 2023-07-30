@@ -1,6 +1,11 @@
 .vscode/
 __pycache__/
-*.log
+
 .env
+.venv/
+
+*.log
+
 credentials.json
 token.json
+

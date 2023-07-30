@@ -5,8 +5,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from currency import Currency
 from scrape import scrape_url
-
 from sheets import generate_url_to_index, add_new_doujin
 
 # Load API keys
@@ -19,8 +19,15 @@ discord.utils.setup_logging(handler = handler, root=False)
 # URL to index mapping
 url_to_index = generate_url_to_index()
 
+# Requires message_content intent to work
 intents = discord.Intents.default()
 intents.message_content = True
+
+# Currency setup
+CURRENCY_API_KEY = os.getenv("CURRENCY_API_KEY")
+assert CURRENCY_API_KEY is not None
+currency = Currency(CURRENCY_API_KEY)
+
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
 @bot.command()
@@ -36,6 +43,7 @@ async def add(ctx, url):
 
     embed.set_thumbnail(url=image_preview_url)
     embed.add_field(name="Price (¥)", value=price_in_yen, inline=True)
+    embed.add_field(name="Price ($)", value="{:.2f}".format(currency.convert_to(price_in_yen)), inline=True)
     embed.add_field(name="R18?", value="Yes" if is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=genre, inline=False)
     if(url in url_to_index):
@@ -44,4 +52,7 @@ async def add(ctx, url):
         add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen)
         await ctx.send(f'Added {title}', embed=embed)
 
-bot.run(os.getenv("TOKEN"))
+DISCORD_TOKEN = os.getenv("TOKEN")
+assert DISCORD_TOKEN is not None
+
+bot.run(DISCORD_TOKEN)
