@@ -16,6 +16,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 # The ID and range of a sample spreadsheet.
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 URL_RANGE = 'Tracker!A2:A'
+USER_RANGE = 'Tracker!H1:1'
 
 
 def generate_url_to_index():
@@ -99,6 +100,105 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
     except HttpError as err:
         print(err)
 
+def generate_user_to_index():
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    try:
+        service = build('sheets', 'v4', credentials=creds)
+
+        # Call the Sheets API
+        sheet = service.spreadsheets()
+        result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
+                                    range=USER_RANGE).execute()
+        values = result.get('values', [])
+
+        if not values:
+            print('No data found.')
+            return {}
+        # TODO: Fix this so more people can hop on
+        return {data[0]: chr(ord("H") + index) for index, data in enumerate(values)}
+    except HttpError as err:
+        print(err)
+
+async def add_user_to_doujin(username_to_index: dict, url_to_index: dict, username: str, url: str):
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    try:
+        # TODO: Fix this so more people can hop on
+        service = build('sheets', 'v4', credentials=creds)
+        if username not in username_to_index:
+            values = [
+                [
+                    username
+                ],
+            ]
+            body = {
+                'values': values
+            }
+
+            column_for_new_username = chr(ord("H") + len(username_to_index))
+            range_for_new_username = f"{column_for_new_username}1"
+            result = service.spreadsheets().values().update(
+                spreadsheetId=SPREADSHEET_ID, range=range_for_new_username,
+                valueInputOption="USER_ENTERED", body=body).execute()
+
+            print(f"{result.get('updatedCells')} cells updated.")
+            url_to_index[username] = username
+
+        values = [
+            [
+                "X"
+            ],
+        ]
+        body = {
+            'values': values
+        }
+
+        range_to_add = f"{username_to_index[username]}{url_to_index[url]}"
+        result = service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID, range=range_to_add,
+            valueInputOption="USER_ENTERED", body=body).execute()
+
+        print(f"{result.get('updatedCells')} cells updated.")
+
+    except HttpError as err:
+        print(err)
+
 if __name__ == '__main__':
-    mapping = generate_url_to_index()
-    print(mapping)
+    url_to_index = generate_url_to_index()
+    print(url_to_index)
+
+    user_to_index = generate_user_to_index()
+    print(user_to_index)

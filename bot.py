@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from currency import Currency
 from scrape import scrape_url
-from sheets import generate_url_to_index, add_new_doujin
+from sheets import generate_url_to_index, add_new_doujin, generate_user_to_index, add_user_to_doujin
 
 # Load API keys
 load_dotenv()
@@ -20,8 +20,13 @@ discord.utils.setup_logging(handler=handler, root=False)
 
 # URL to index mapping
 url_to_index = generate_url_to_index()
-# Lock for updaing the index mapping
+# Lock for updating the index mapping for urls
 url_to_index_lock = asyncio.Lock()
+
+# user to index mapping
+username_to_index = generate_user_to_index()
+# Lock for updating the index mapping for users
+username_to_index_lock = asyncio.Lock()
 
 
 # Requires message_content intent to work
@@ -42,8 +47,10 @@ class ActionButtons(discord.ui.View):
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.green)
     async def add_button_action(self, interaction: discord.Interaction, button: discord.ui.Button):
-        user = interaction.user
-        await interaction.response.send_message(f"Added <@{user.id}> to {self.title}")
+        id, username = interaction.user.id, interaction.user.name
+        async with username_to_index_lock:
+            await add_user_to_doujin(username_to_index, url_to_index, username, self.url)
+        await interaction.response.send_message(f"Added <@{id}> to {self.title}")
 
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.red)
@@ -54,7 +61,7 @@ class ActionButtons(discord.ui.View):
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
 @bot.command()
-async def add(ctx, url):
+async def add(ctx: discord.ext.commands.Context, url):
     title, price_in_yen, circle_name, author_name, \
         genre, _, is_r18, image_preview_url = scrape_url(url)
 

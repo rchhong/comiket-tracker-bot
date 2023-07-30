@@ -3,6 +3,7 @@ from urllib3.util import create_urllib3_context
 from urllib3 import PoolManager
 from requests.adapters import HTTPAdapter
 from requests import Session
+from collections import namedtuple
 
 
 class AddedCipherAdapter(HTTPAdapter):
@@ -18,7 +19,9 @@ class AddedCipherAdapter(HTTPAdapter):
 s = Session()
 s.mount('https://www.melonbooks.co.jp', AddedCipherAdapter())
 
-def scrape_url(url):
+Doujin = namedtuple('Doujin', ["title", "price_in_yen", "circle_name", "author_name", "genre", "event", "is_r18", "image_preview_url"])
+
+def scrape_url(url: str):
     page = s.get(url)
     soup = BeautifulSoup(page.content, features="html.parser")
 
@@ -40,4 +43,4 @@ def scrape_url(url):
     is_r18 = info_table.findChildren('td')[-1].string.strip() == "18禁"
     image_preview_url = f'https:{soup.find("div", {"class": "item-img"}).findChildren("img")[0].attrs["src"]}'
 
-    return title, price_in_yen, circle_name, author_name, genre, event, is_r18, image_preview_url
+    return Doujin(title, price_in_yen, circle_name, author_name, genre, event, is_r18, image_preview_url)
