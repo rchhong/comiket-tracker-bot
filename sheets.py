@@ -84,6 +84,7 @@ def read_from_spreadsheet(spreadsheet_id: str, range: str):
         values = result.get('values', [])
 
         if not values:
+            print('No data found.')
             return []
 
         return values

@@ -77,8 +77,13 @@ async def add(ctx: discord.ext.commands.Context, url):
     title, price_in_yen, circle_name, author_name, \
         genre, _, is_r18, image_preview_url = scrape_url(url)
 
+<<<<<<< HEAD
     # Add buttons
     view = ActionButtons(title, url)
+=======
+    price_in_usd = currency.convert_to(price_in_yen)
+    price_in_usd_formatted = "{:.2f}".format(price_in_usd)
+>>>>>>> main
 
     # Add embed
     embed=discord.Embed(
@@ -87,7 +92,7 @@ async def add(ctx: discord.ext.commands.Context, url):
     )
     embed.set_thumbnail(url=image_preview_url)
     embed.add_field(name="Price (¥)", value=price_in_yen, inline=True)
-    embed.add_field(name="Price ($)", value="{:.2f}".format(currency.convert_to(price_in_yen)), inline=True)
+    embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
     embed.add_field(name="R18?", value="Yes" if is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=genre, inline=False)
     if(url in url_to_index):
