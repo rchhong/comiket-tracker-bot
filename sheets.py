@@ -55,7 +55,7 @@ def generate_url_to_index():
     except HttpError as err:
         print(err)
 
-def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen):
+async def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen):
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -88,7 +88,7 @@ def add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is
         }
 
         index_of_new_doujin = len(url_to_index) + 1
-        range_for_new_doujin = f"A{index_of_new_doujin}:F{index_of_new_doujin}"
+        range_for_new_doujin = f"A{index_of_new_doujin + 1}:F{index_of_new_doujin + 1}"
         result = service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID, range=range_for_new_doujin,
             valueInputOption="USER_ENTERED", body=body).execute()

@@ -5,4 +5,4 @@ google_auth_oauthlib==1.0.0
 protobuf==4.23.4
 python-dotenv==1.0.0
 Requests==2.31.0
-urllib3==1.26.16
+urllib3==2.0.4

@@ -1,5 +1,7 @@
 import logging
 import os
+import asyncio
+
 
 import discord
 from discord.ext import commands
@@ -14,10 +16,13 @@ load_dotenv()
 
 # Logger
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-discord.utils.setup_logging(handler = handler, root=False)
+discord.utils.setup_logging(handler=handler, root=False)
 
 # URL to index mapping
 url_to_index = generate_url_to_index()
+# Lock for updaing the index mapping
+url_to_index_lock = asyncio.Lock()
+
 
 # Requires message_content intent to work
 intents = discord.Intents.default()
@@ -49,7 +54,8 @@ async def add(ctx, url):
     if(url in url_to_index):
         await ctx.send(f'{title} has already been added!', embed=embed)
     else:
-        add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen)
+        async with url_to_index_lock:
+            await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen)
         await ctx.send(f'Added {title}', embed=embed)
 
 DISCORD_TOKEN = os.getenv("TOKEN")
