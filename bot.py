@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 
 from currency import Currency
 from scrape import scrape_url
-from sheets import generate_url_to_index, add_new_doujin, generate_user_to_index, add_user_to_doujin
+from sheets import generate_url_to_index, add_new_doujin, \
+    generate_user_to_index, add_user_to_doujin, \
+    add_user_to_spreadsheet, remove_user_from_doujin
 
 # Load API keys
 load_dotenv()
@@ -27,6 +29,9 @@ url_to_index_lock = asyncio.Lock()
 username_to_index = generate_user_to_index()
 # Lock for updating the index mapping for users
 username_to_index_lock = asyncio.Lock()
+
+print("url_to_index", url_to_index)
+print("username_to_index", username_to_index)
 
 
 # Requires message_content intent to work
@@ -47,16 +52,23 @@ class ActionButtons(discord.ui.View):
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.green)
     async def add_button_action(self, interaction: discord.Interaction, button: discord.ui.Button):
-        id, username = interaction.user.id, interaction.user.name
-        async with username_to_index_lock:
-            await add_user_to_doujin(username_to_index, url_to_index, username, self.url)
-        await interaction.response.send_message(f"Added <@{id}> to {self.title}")
+        userid, username = interaction.user.id, interaction.user.name
+        if username not in username_to_index:
+            async with username_to_index_lock:
+                await add_user_to_spreadsheet(username_to_index, username)
+
+        add_user_to_doujin(username_to_index, url_to_index, username, self.url)
+        await interaction.response.send_message(f"Added <@{userid}> to {self.title}")
 
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.red)
     async def remove_button_action(self, interaction: discord.Interaction, button: discord.ui.Button):
-        user = interaction.user
-        await interaction.response.send_message(f"Removed <@{user.id}> from {self.title}")
+        userid, username = interaction.user.id, interaction.user.name
+        if username not in username_to_index:
+            await interaction.response.send_message(f"Error: <@{userid}> is not added to the database.  Please add something before trying to remove.")
+
+        remove_user_from_doujin(username_to_index, url_to_index, username, self.url)
+        await interaction.response.send_message(f"Removed <@{userid}> from {self.title}")
 
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
