@@ -7,5 +7,6 @@ __pycache__/
 *.log
 
 credentials.json
+service.json
 token.json
 
