@@ -2,6 +2,7 @@ from __future__ import print_function
 from dotenv import load_dotenv
 import os.path
 
+from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -12,9 +13,9 @@ load_dotenv()
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
 # The ID and range of a sample spreadsheet.
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+assert SPREADSHEET_ID is not None
 URL_RANGE = 'Tracker!A2:A'
 USER_RANGE = 'Tracker!H1:1'
 
@@ -24,10 +25,16 @@ def write_to_spreadsheet(spreadsheet_id: str, range: str, values = list[list[any
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.json'):
+    
+    #Use service account instead
+    if os.path.exists('service.json'):
+        creds = service_account.Credentials.from_service_account_file(
+                'service.json', scopes=SCOPES)    
+    elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
     # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
+    if not creds or not (creds.valid or isinstance(creds, service_account.Credentials)):
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
@@ -60,10 +67,17 @@ def read_from_spreadsheet(spreadsheet_id: str, range: str):
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.json'):
+    if os.path.exists('service.json'):
+        #Use service account instead
+        creds = service_account.Credentials.from_service_account_file(
+                'service.json', scopes=SCOPES)
+        # assert isinstance(creds, Credentials)
+        
+    elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
     # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
+    if not creds or not (creds.valid or isinstance(creds, service_account.Credentials)):
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
