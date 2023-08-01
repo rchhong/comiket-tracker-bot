@@ -58,7 +58,7 @@ class ActionButtons(discord.ui.View):
                 await add_user_to_spreadsheet(username_to_index, username)
 
         add_user_to_doujin(username_to_index, url_to_index, username, self.url)
-        await interaction.response.send_message(f"Added <@{userid}> to {self.title}")
+        await interaction.response.send_message(f"Added <@{userid}> to {self.title}", ephemeral=True)
 
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.red)
@@ -68,7 +68,7 @@ class ActionButtons(discord.ui.View):
             await interaction.response.send_message(f"Error: <@{userid}> is not added to the database.  Please add something before trying to remove.")
 
         remove_user_from_doujin(username_to_index, url_to_index, username, self.url)
-        await interaction.response.send_message(f"Removed <@{userid}> from {self.title}")
+        await interaction.response.send_message(f"Removed <@{userid}> from {self.title}", ephemeral=True)
 
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
