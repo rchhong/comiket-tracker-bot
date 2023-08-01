@@ -4,6 +4,12 @@ from urllib3 import PoolManager
 from requests.adapters import HTTPAdapter
 from requests import Session
 from collections import namedtuple
+import re
+
+CIRCLE_NAME_TAG_JAPANESE = 'サークル名'
+ARTIST_NAME_TAG_JAPANESE = '作家名'
+GENRE_TAG_JAPANESE = 'ジャンル'
+EVENT_TAG_JAPANESE = 'イベント'
 
 
 class AddedCipherAdapter(HTTPAdapter):
@@ -30,16 +36,33 @@ def scrape_url(url: str):
                     1:].replace(",", ""))
 
     # Table contains some key information
-    info_table = soup.find("div", {"class", "table-wrapper"})
-    relevant_table_children = info_table.findChildren(
-        "a", {"class": ""}, recursive=True
+    info_table = soup.find("div", {"class": "table-wrapper"})
+    raw_tags = info_table.findChildren(
+        "th", recursive=True
     )
 
-    circle_name = " ".join(
-        relevant_table_children[0].string.strip().split("\xa0")[:-1])
-    author_name = relevant_table_children[1].string.strip()
-    genre = relevant_table_children[2].string.strip()
-    event = relevant_table_children[3].string.strip()
+    available_tags = [tag.string for tag in raw_tags]
+    raw_tag_info = [raw_tag.next_sibling.next_sibling.findAll(text=True, recursive=True) for raw_tag in raw_tags]
+    raw_tag_info = [[x.strip() for x in raw_tag if x.strip() and x.strip() != ","] for raw_tag in raw_tag_info]
+
+    raw_info = dict(zip(available_tags, raw_tag_info))
+
+    circle_name, author_name, genre, event = None, None, None, None
+
+    if CIRCLE_NAME_TAG_JAPANESE in raw_info:
+        raw_circle_name_string = raw_info[CIRCLE_NAME_TAG_JAPANESE][0]
+        circle_name = " ".join(
+            raw_circle_name_string.split("\xa0")[:-1])
+
+    if ARTIST_NAME_TAG_JAPANESE in raw_info:
+        author_name = ", ".join(raw_info[ARTIST_NAME_TAG_JAPANESE])
+
+    if GENRE_TAG_JAPANESE in raw_info:
+        genre = ", ".join(raw_info[GENRE_TAG_JAPANESE])
+
+    if EVENT_TAG_JAPANESE in raw_info:
+        event = ", ".join(raw_info[EVENT_TAG_JAPANESE])
+
     is_r18 = info_table.findChildren('td')[-1].string.strip() == "18禁"
     image_preview_url = f'https:{soup.find("div", {"class": "item-img"}).findChildren("img")[0].attrs["src"]}'
 
