@@ -127,6 +127,20 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
     write_to_spreadsheet(SPREADSHEET_ID, range_for_new_doujin, values)
     url_to_index[url] = index_of_new_doujin
 
+#returns a list of doujins that the user has subscribed to.
+async def get_user_doujins(url_to_index, user_to_index, user: str, page: int):
+    if user not in user_to_index:
+        return []
+    index_of_doujins = len(url_to_index) + 1
+    if (page - 1) * 10 > index_of_doujins:
+        return []
+    range_for_user = f"F{2 + (page - 1) * 10 }:{user_to_index[user]}{min (page * 10, index_of_doujins)}"
+    flip = dict((v - 2,k) for k,v in url_to_index.items())
+    values = read_from_spreadsheet(SPREADSHEET_ID, range_for_user)
+    assert isinstance (values, list)
+    #not that len(v) is searching for 'X' as read_from_spreadsheet returns [yen, usd, X] or [yen, usd]
+    return [(flip[ind], *v) for ind, v in enumerate(values) if len(v) == 3]
+    
 def generate_user_to_index():
     raw_values = read_from_spreadsheet(SPREADSHEET_ID, USER_RANGE)
     if not raw_values:
