@@ -64,6 +64,7 @@ class Currency:
             force_update
             or self.last_update is None
             or (datetime.now() - self.last_update).seconds > 7200
+            or self.current_rate == 0
         ):
             self.update_cache()
 

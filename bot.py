@@ -6,12 +6,12 @@ import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-
 from currency import Currency
 from scrape import scrape_url
 from sheets import generate_url_to_index, add_new_doujin, \
     generate_user_to_index, add_user_to_doujin, \
-    add_user_to_spreadsheet, remove_user_from_doujin
+    add_user_to_spreadsheet, remove_user_from_doujin, \
+    get_user_doujins
 
 # Load API keys
 load_dotenv()
@@ -58,7 +58,7 @@ class ActionButtons(discord.ui.View):
                 await add_user_to_spreadsheet(username_to_index, username)
 
         add_user_to_doujin(username_to_index, url_to_index, username, self.url)
-        await interaction.response.send_message(f"Added <@{userid}> to {self.title}")
+        await interaction.response.send_message(f"Added <@{userid}> to {self.title}", ephemeral=True)
 
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.red)
@@ -68,12 +68,13 @@ class ActionButtons(discord.ui.View):
             await interaction.response.send_message(f"Error: <@{userid}> is not added to the database.  Please add something before trying to remove.")
 
         remove_user_from_doujin(username_to_index, url_to_index, username, self.url)
-        await interaction.response.send_message(f"Removed <@{userid}> from {self.title}")
-
+        await interaction.response.send_message(f"Removed <@{userid}> from {self.title}", ephemeral=True)
+        
+        
 bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
 @bot.command()
-async def add(ctx: discord.ext.commands.Context, url):
+async def add(ctx: commands.Context, url):
     title, price_in_yen, circle_name, author_name, \
         genre, _, is_r18, image_preview_url = scrape_url(url)
 
@@ -99,6 +100,28 @@ async def add(ctx: discord.ext.commands.Context, url):
         async with url_to_index_lock:
             await add_new_doujin(url_to_index, url, title, circle_name, author_name, genre, is_r18, price_in_yen, price_in_usd_formatted)
         await ctx.send(f'Added {title}', embed=embed, view=view)
+
+@bot.command()
+async def list(ctx: commands.Context, pg=None):
+    if pg is None:
+        pg = 1
+    if not isinstance(pg, int):
+        try:
+            int(pg)
+        except ValueError:
+            pg = 1
+            
+    res = await get_user_doujins(url_to_index, username_to_index, str (ctx.author), pg)
+    
+    embed=discord.Embed(
+        title = f'Page: {pg} for {ctx.author}',
+    )
+    list_string = ""
+    for x in res:
+        list_string += f'Link: {x[0]} price {x[2]}\n'
+    embed.add_field(name="List", value =list_string)
+    await ctx.send ('', embed=embed)
+    
 
 DISCORD_TOKEN = os.getenv("TOKEN")
 assert DISCORD_TOKEN is not None
