@@ -17,7 +17,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 assert SPREADSHEET_ID is not None
 URL_RANGE = 'Tracker!A2:A'
-USER_RANGE = 'Tracker!H1:1'
+USER_RANGE = 'Tracker!1:1'
 
 
 def write_to_spreadsheet(spreadsheet_id: str, range: str, values = list[list[any]]):
@@ -25,14 +25,14 @@ def write_to_spreadsheet(spreadsheet_id: str, range: str, values = list[list[any
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    
+
     #Use service account instead
     if os.path.exists('service.json'):
         creds = service_account.Credentials.from_service_account_file(
-                'service.json', scopes=SCOPES)    
+                'service.json', scopes=SCOPES)
     elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-        
+
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not (creds.valid or isinstance(creds, service_account.Credentials)):
         if creds and creds.expired and creds.refresh_token:
@@ -72,10 +72,10 @@ def read_from_spreadsheet(spreadsheet_id: str, range: str):
         creds = service_account.Credentials.from_service_account_file(
                 'service.json', scopes=SCOPES)
         # assert isinstance(creds, Credentials)
-        
+
     elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-        
+
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not (creds.valid or isinstance(creds, service_account.Credentials)):
         if creds and creds.expired and creds.refresh_token:
@@ -148,7 +148,7 @@ def generate_user_to_index():
         return {}
 
     # TODO: Fix this so more people can hop on
-    return {data[0]: chr(ord("H") + index) for index, data in enumerate(raw_values)}
+    return {data: chr(ord("H") + index) for index, data in enumerate(raw_values[0][7:])}
 
 
 async def add_user_to_spreadsheet(username_to_index: dict, username: str):
