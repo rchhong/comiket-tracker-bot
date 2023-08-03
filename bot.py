@@ -1,7 +1,7 @@
 import logging
 import os
 import asyncio
-
+import textwrap
 
 import discord
 from discord.ext import commands
@@ -11,7 +11,8 @@ from scrape import scrape_url
 from sheets import generate_url_to_index, add_new_doujin, \
     generate_user_to_index, add_user_to_doujin, \
     add_user_to_spreadsheet, remove_user_from_doujin, \
-    get_user_doujins
+    get_user_doujins, frontload_doujins_fromdb
+
 
 # Load API keys
 load_dotenv()
@@ -33,6 +34,7 @@ username_to_index_lock = asyncio.Lock()
 print("url_to_index", url_to_index)
 print("username_to_index", username_to_index)
 
+db_dict = frontload_doujins_fromdb(url_to_index)
 
 # Requires message_content intent to work
 intents = discord.Intents.default()
@@ -102,25 +104,59 @@ async def add(ctx: commands.Context, url):
         await ctx.send(f'Added {title}', embed=embed, view=view)
 
 @bot.command()
-async def list(ctx: commands.Context, pg=None):
-    if pg is None:
-        pg = 1
-    if not isinstance(pg, int):
-        try:
-            int(pg)
-        except ValueError:
-            pg = 1
-            
-    res = await get_user_doujins(url_to_index, username_to_index, str (ctx.author), pg)
+async def list(ctx: commands.Context):  
+    res = await get_user_doujins(url_to_index, username_to_index, str (ctx.author))
     
-    embed=discord.Embed(
-        title = f'Page: {pg} for {ctx.author}',
-    )
+    embeds = []
     list_string = ""
+    
+    page = 0
+    list_string = ""
+    cur_embed=discord.Embed()
+    
+    price_yen_total = 0
     for x in res:
-        list_string += f'Link: {x[0]} price {x[2]}\n'
-    embed.add_field(name="List", value =list_string)
-    await ctx.send ('', embed=embed)
+        if len(list_string) > 600:
+            cur_embed.add_field(name=f'Page: {page + 1}', value = list_string)
+            list_string = ""
+            page += 1
+            if page % 3 == 0:
+                # cur_embed.description = f'Embed {int (page/4) + 1}'
+                embeds.append(cur_embed)
+                
+                cur_embed = discord.Embed()
+            
+        url = x[0]
+        title = db_dict[url][1]
+        temp = f'¥{db_dict[url][6]} - [{title[:10] + "..." if len(title) > 12 else title}]({url})\n'
+        try:
+            price_yen_total += int (db_dict[url][6])
+        except ValueError:
+            try: 
+                price_yen_total += int (db_dict[url][6][1:])
+            except ValueError:
+                currency.logger.error("Yen is invalid")
+        list_string += temp
+    embeds.append(cur_embed)
+    
+    prev = 0
+    total = 0
+    has_sent = False
+    for ind, embed in enumerate (embeds):
+        embed = cur_embed
+        # embed would be the discord.Embed instance
+        fields = [embed.title, embed.description, embed.footer.text, embed.author.name]
+
+        total += sum ([len (str (field.value)) for field in embed.fields])
+        print(total)   
+        if total > 5000:
+            await ctx.reply(content=f"List of added Doujins{' Continued' if has_sent else ''}: ", embeds = embeds[prev:ind])
+            prev = ind
+            total = sum ([len (str (field.value)) for field in embed.fields])
+            has_sent = True
+    if total != 0:
+        await ctx.reply(content=f"List of added Doujins{' Continued' if has_sent else ''}: ", embeds = embeds[prev:])
+    await ctx.reply(content=f'Total cost: ¥{price_yen_total}, ${currency.convert_to(price_yen_total)}')
     
 
 DISCORD_TOKEN = os.getenv("TOKEN")
