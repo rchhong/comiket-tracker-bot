@@ -10,6 +10,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from scrape import Doujin
 load_dotenv()
 
 # If modifying these scopes, delete the file token.json.
@@ -182,11 +183,22 @@ def remove_user_from_doujin(username_to_index: dict, url_to_index: dict, usernam
     range_to_remove = f"{username_to_index[username]}{url_to_index[url]}"
     write_to_spreadsheet(SPREADSHEET_ID, range_to_remove, values)
 
-def frontload_doujins_fromdb(url_to_index: dict):
+def frontload_doujins_fromdb(url_to_index: dict) -> Dict[str, List[str]]:
     values = read_from_spreadsheet(SPREADSHEET_ID, f'DB!A1:I{len(url_to_index) + 1}')
     assert isinstance (values, List)
     
     return {x[0]:x for x in values}
+
+def add_to_db(doujin_to_add: Doujin, url: str, url_to_index: Dict[str, int], prev: Dict[str, List[str]]):
+    title, price_in_yen, circle_name, author_name, \
+                genre, event, is_r18, image_preview_url = doujin_to_add
+    values = [[
+                url, title, circle_name, author_name, genre, is_r18, price_in_yen, event, image_preview_url
+            ]]
+    index_of_new_doujin = len(url_to_index) + 1
+
+    write_to_spreadsheet(SPREADSHEET_ID, f'DB!A{index_of_new_doujin}:I{index_of_new_doujin}',values)
+    prev[url] = values[0]
 
 
 if __name__ == '__main__':

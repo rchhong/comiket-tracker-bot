@@ -11,7 +11,8 @@ from scrape import scrape_url
 from sheets import generate_url_to_index, add_new_doujin, \
     generate_user_to_index, add_user_to_doujin, \
     add_user_to_spreadsheet, remove_user_from_doujin, \
-    get_user_doujins, frontload_doujins_fromdb
+    get_user_doujins, frontload_doujins_fromdb, \
+    add_to_db
 
 
 # Load API keys
@@ -77,8 +78,12 @@ bot = commands.Bot(command_prefix='!', intents=intents, log_handler=handler)
 
 @bot.command()
 async def add(ctx: commands.Context, url):
+    doujin = scrape_url(url)
+    
+    add_to_db(doujin, url, url_to_index, db_dict)
+    
     title, price_in_yen, circle_name, author_name, \
-        genre, _, is_r18, image_preview_url = scrape_url(url)
+        genre, _, is_r18, image_preview_url = doujin
 
     price_in_usd = currency.convert_to(price_in_yen)
     price_in_usd_formatted = "{:.2f}".format(price_in_usd)
@@ -137,6 +142,9 @@ async def list(ctx: commands.Context):
             except ValueError:
                 currency.logger.error("Yen is invalid")
         list_string += temp
+    cur_embed.add_field(name=f'Page: {page + 1}', value = list_string)
+    list_string = ""
+    page += 1
     embeds.append(cur_embed)
     
     prev = 0
@@ -148,7 +156,6 @@ async def list(ctx: commands.Context):
         fields = [embed.title, embed.description, embed.footer.text, embed.author.name]
 
         total += sum ([len (str (field.value)) for field in embed.fields])
-        print(total)   
         if total > 5000:
             await ctx.reply(content=f"List of added Doujins{' Continued' if has_sent else ''}: ", embeds = embeds[prev:ind])
             prev = ind
@@ -156,7 +163,8 @@ async def list(ctx: commands.Context):
             has_sent = True
     if total != 0:
         await ctx.reply(content=f"List of added Doujins{' Continued' if has_sent else ''}: ", embeds = embeds[prev:])
-    await ctx.reply(content=f'Total cost: ¥{price_yen_total}, ${currency.convert_to(price_yen_total)}')
+    price_usd = "{:.2f}".format(currency.convert_to(price_yen_total))
+    await ctx.reply(content=f'Total cost: ¥{price_yen_total}, ${price_usd}')
     
 
 DISCORD_TOKEN = os.getenv("TOKEN")
