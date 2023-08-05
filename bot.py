@@ -14,6 +14,7 @@ from sheets import generate_url_to_index, add_new_doujin, \
     get_user_doujins, frontload_doujins_fromdb, \
     add_to_db
 
+import math
 
 # Load API keys
 load_dotenv()
@@ -166,7 +167,49 @@ async def list(ctx: commands.Context):
     price_usd = "{:.2f}".format(currency.convert_to(price_yen_total))
     await ctx.reply(content=f'Total cost: ¥{price_yen_total}, ${price_usd}')
     
+@bot.command()
+async def list_images(ctx: commands.Context, page = None, count = None):
+    if page is None:
+        page = 1
+    
+    try:
+        page = int(page)
+    except ValueError:
+        page = 1
+        
+    if count is None:
+        count = 1
+    
+    try:
+        count = int(count)
+    except ValueError:
+        count = 1
+        
+        
+    res = await get_user_doujins(url_to_index, username_to_index, str (ctx.author))
+    
+    if page * 4 > len(res):
+        page = 1
+    
+    page -= 1
+    
+    embeds = []
+    ind = 0
+    for ind, x in enumerate (res[page*4:(page+count)*4]):
+        cur_embed = discord.Embed()
+        url = x[0]        
+        cur_embed.set_image (url=db_dict[url][8]).url = "http://www.google.com"
+        embeds.append(cur_embed)
+        
+        if ind % 4 == 3:
+            await ctx.reply(content=f"List as Pictures for Page {page + 1 + int(ind/4)} of {math.ceil (len(res) / 4)}: ", embeds = embeds)
+            embeds = []
 
+        
+    if len(embeds) > 0:
+        await ctx.reply(content=f"List as Pictures for Page {page + 1 + int(ind/4)} of {math.ceil (len(res) / 4)}: ", embeds = embeds)
+    
+    
 DISCORD_TOKEN = os.getenv("TOKEN")
 assert DISCORD_TOKEN is not None
 
