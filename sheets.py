@@ -2,6 +2,7 @@ from __future__ import print_function
 from dotenv import load_dotenv
 import os.path
 
+from typing import Dict, List, Any
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -9,6 +10,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from scrape import Doujin
 load_dotenv()
 
 # If modifying these scopes, delete the file token.json.
@@ -20,7 +22,7 @@ URL_RANGE = 'Tracker!A2:A'
 USER_RANGE = 'Tracker!1:1'
 
 
-def write_to_spreadsheet(spreadsheet_id: str, range: str, values = list[list[any]]):
+def write_to_spreadsheet(spreadsheet_id: str, range: str, values: List[List[Any]]):
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -128,18 +130,17 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
     url_to_index[url] = index_of_new_doujin
 
 #returns a list of doujins that the user has subscribed to.
-async def get_user_doujins(url_to_index, user_to_index, user: str, page: int):
+async def get_user_doujins(url_to_index, user_to_index, user: str):
     if user not in user_to_index:
         return []
+    
     index_of_doujins = len(url_to_index) + 1
-    if (page - 1) * 10 > index_of_doujins:
-        return []
-    range_for_user = f"F{2 + (page - 1) * 10 }:{user_to_index[user]}{min (page * 10, index_of_doujins)}"
+
+    range_for_user = f"{user_to_index[user]}{2}:{user_to_index[user]}{index_of_doujins}"
     flip = dict((v - 2,k) for k,v in url_to_index.items())
     values = read_from_spreadsheet(SPREADSHEET_ID, range_for_user)
     assert isinstance (values, list)
-    #not that len(v) is searching for 'X' as read_from_spreadsheet returns [yen, usd, X] or [yen, usd]
-    return [(flip[ind], *v) for ind, v in enumerate(values) if len(v) == 3]
+    return [(flip[ind], *v) for ind, v in enumerate(values) if len(v) == 1]
     
 def generate_user_to_index():
     raw_values = read_from_spreadsheet(SPREADSHEET_ID, USER_RANGE)
@@ -182,9 +183,45 @@ def remove_user_from_doujin(username_to_index: dict, url_to_index: dict, usernam
     range_to_remove = f"{username_to_index[username]}{url_to_index[url]}"
     write_to_spreadsheet(SPREADSHEET_ID, range_to_remove, values)
 
+def frontload_doujins_fromdb(url_to_index: dict) -> Dict[str, List[str]]:
+    values = read_from_spreadsheet(SPREADSHEET_ID, f'DB!A1:I{len(url_to_index) + 1}')
+    assert isinstance (values, List)
+    
+    return {x[0]:x for x in values}
+
+def add_to_db(doujin_to_add: Doujin, url: str, url_to_index: Dict[str, int], prev: Dict[str, List[str]]):
+    title, price_in_yen, circle_name, author_name, \
+                genre, event, is_r18, image_preview_url = doujin_to_add
+    values = [[
+                url, title, circle_name, author_name, genre, is_r18, price_in_yen, event, image_preview_url
+            ]]
+    index_of_new_doujin = len(url_to_index) + 1
+
+    write_to_spreadsheet(SPREADSHEET_ID, f'DB!A{index_of_new_doujin}:I{index_of_new_doujin}',values)
+    prev[url] = values[0]
+
+
 if __name__ == '__main__':
     url_to_index = generate_url_to_index()
     print(url_to_index)
 
     user_to_index = generate_user_to_index()
     print(user_to_index)
+    
+    def back_port_doujins (url_to_index: Dict[str, int]):
+        from scrape import scrape_url
+        
+        values = []
+        for url in url_to_index:
+            title, price_in_yen, circle_name, author_name, \
+                genre, event, is_r18, image_preview_url = scrape_url(url)
+                
+            values.append (
+                [
+                    url, title, circle_name, author_name, genre, is_r18, price_in_yen, event, image_preview_url
+                ]
+            )
+            
+        write_to_spreadsheet(SPREADSHEET_ID, f'DB!A1:I{len(values) + 1}',values)
+        
+    back_port_doujins(url_to_index)
