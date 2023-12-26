@@ -2,7 +2,7 @@ from __future__ import print_function
 from dotenv import load_dotenv
 import os.path
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -130,7 +130,7 @@ async def add_new_doujin(url_to_index, url, title, circle_name, author_name, gen
     url_to_index[url] = index_of_new_doujin
 
 #returns a list of doujins that the user has subscribed to.
-async def get_user_doujins(url_to_index, user_to_index, user: str):
+async def get_user_doujins(url_to_index, user_to_index, user: str) -> List[Dict[str, Any]]:
     if user not in user_to_index:
         return []
     
@@ -140,7 +140,7 @@ async def get_user_doujins(url_to_index, user_to_index, user: str):
     flip = dict((v - 2,k) for k,v in url_to_index.items())
     values = read_from_spreadsheet(SPREADSHEET_ID, range_for_user)
     assert isinstance (values, list)
-    return [(flip[ind], *v) for ind, v in enumerate(values) if len(v) == 1]
+    return [{'id' : ind, 'data' : (flip[ind], *v)} for ind, v in enumerate(values) if len(v) == 1]
     
 def generate_user_to_index():
     raw_values = read_from_spreadsheet(SPREADSHEET_ID, USER_RANGE)
@@ -163,6 +163,33 @@ async def add_user_to_spreadsheet(username_to_index: dict, username: str):
 
     write_to_spreadsheet(SPREADSHEET_ID, range_for_new_username, values)
     username_to_index[username] = column_for_new_username
+
+def does_user_have_doujin(username_to_index: dict, url_to_index: dict, username: str, url: str) -> bool:
+    range_to_check = f"{username_to_index[username]}{url_to_index[url]}"
+    values = read_from_spreadsheet(SPREADSHEET_ID, range_to_check)
+    if values is None:
+        raise ValueError
+    if values == []:
+        return False
+    
+    return values[0][0] == 'X'
+
+def who_has_doujin(username_to_index: dict, url_to_index: dict, url: str) -> List[str]:
+    range_to_check = f"{'Tracker!H'}{url_to_index[url]}:{chr (ord('H') + len(username_to_index))}{url_to_index[url]}"
+    print (range_to_check)
+    values = read_from_spreadsheet(SPREADSHEET_ID, range_to_check)
+    if values is None:
+        raise ValueError
+    
+    if values == []:
+        return []
+    
+    values = values[0]
+    # pad to make same size
+    values.extend ([''] * (len(username_to_index) - len(values)))
+        
+    print (values, username_to_index)
+    return [key for key, value in username_to_index.items() if values[ord (value) - 72] == 'X']
 
 def add_user_to_doujin(username_to_index: dict, url_to_index: dict, username: str, url: str):
     values = [
