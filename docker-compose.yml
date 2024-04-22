@@ -1,15 +1,24 @@
-version: "3.9"
-
 services:
   bot:
     container_name: comiketbot
-    build: 
+    build:
       context: .
     working_dir: /app
     image: comiketbot
-    command: npx nodemon bot.py
-    environment:
-      DEBUG: 1
+    command: npx nodemon run.py
+    env_file:
+      - .env
     volumes:
       - .:/app
     restart: on-failure
+  db:
+    container_name: comiketbot-db
+    image: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    env_file:
+      - .env
+volumes:
+  dbdata:

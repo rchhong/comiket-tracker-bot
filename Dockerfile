@@ -12,4 +12,4 @@ RUN npm install -g nodemon
 
 COPY . .
 
-CMD ["python3", "bot.py"]
+CMD ["python3", "run.py"]
