@@ -2,3 +2,4 @@ beautifulsoup4
 discord.py
 psycopg[binary]
 Requests
+python-dotenv

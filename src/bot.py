@@ -5,9 +5,13 @@ import os
 
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
+
 
 from src.currency import Currency
 from src.scrape import DoujinScraper
+
+load_dotenv()
 
 # Logger
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
@@ -48,12 +52,12 @@ async def add(ctx: commands.Context, url: str):
     # Add embed
     embed = discord.Embed(
         url=url,
-        title=f"{doujin.title} - {doujin.circle_name} ({doujin.author_names})",
+        title=f"{doujin.title} - {doujin.circle_name} ({','.join(doujin.author_names)})",
     )
     embed.set_thumbnail(url=doujin.image_preview_url)
     embed.add_field(name="Price (¥)", value=doujin.price_in_yen, inline=True)
     embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
     embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
-    embed.add_field(name="Genre", value=doujin.genres, inline=False)
+    embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
 
     await ctx.send(f"Added {doujin.title}", embed=embed)
