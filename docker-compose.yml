@@ -13,11 +13,12 @@ services:
     restart: on-failure
   db:
     container_name: comiketbot-db
-    image: postgres
+    image: mongo
     ports:
-      - 5432:5432
+      - 20000:27017
     volumes:
-      - dbdata:/var/lib/postgresql/data
+      - dbdata:/data/db
+      - ./src/seed.js:/docker-entrypoint-initdb.d/seed.js:ro
     env_file:
       - .env
 volumes:
