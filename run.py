@@ -1,8 +1,5 @@
-from dotenv import load_dotenv
 from src.bot import bot
 import os
-
-load_dotenv()
 
 # Load environment variables
 

@@ -1,14 +1,14 @@
 console.log("SEEDING DATABASE ########################");
 
-db = db.getSiblingDB("comiket");
+db = db.getSiblingDB(process.env.MONGO_DB_NAME);
 
 db.createUser({
   user: process.env.MONGO_USERNAME,
   pwd: process.env.MONGO_PASSWORD,
-  roles: [{ role: "readWrite", db: "comiket" }],
+  roles: [{ role: "readWrite", db: process.env.MONGO_DB_NAME }],
 });
 
 db.createCollection("users");
-db.createCollection("doujin");
+db.createCollection("doujins");
 
 console.log("SEEDING COMPLETE ########################");

@@ -159,4 +159,5 @@ class DoujinScraper:
             events=events,
             is_r18=is_r18,
             image_preview_url=image_preview_url,
+            url=url,
         )
