@@ -9,6 +9,7 @@ class Doujin:
 
     Attributes
     ----------
+    _id : MongoDB Object ID
     title : Title of doujin
     price_in_yen : Price of doujin (in Japanese Yen)
     is_r18 : Doujin R18?
@@ -24,22 +25,24 @@ class Doujin:
 
     def __init__(
         self,
+        _id: ObjectId,
         title: str,
         price_in_yen: int,
         image_preview_url: str,
         url: str,
-        _id: ObjectId | None = None,
         is_r18: bool = False,
         circle_name: str | None = None,
         author_names: list[str] = [],
         genres: list[str] = [],
         events: list[str] = [],
-        datetime_added: datetime = datetime.now(UTC),
+        last_updated: datetime = datetime.now(UTC),
     ):
         """Construct a doujin class.
 
         Parameters
         ----------
+        _id : ObjectId
+            MongoDB Object Id
         title : str
             Title of doujin
         price_in_yen : float
@@ -58,10 +61,13 @@ class Doujin:
             Doujin genre names
         events : list[str]
             Doujin event names
-        datetime_added : datetime
+        last_updated : datetime
             datetime of when Doujin data was added.
 
         """
+        if not isinstance(_id, ObjectId):
+            raise TypeError("_id must be a ObjectId")
+
         if not isinstance(title, str):
             raise TypeError("title must be a string")
 
@@ -98,15 +104,16 @@ class Doujin:
         ):
             raise TypeError("event must be a list of strings")
 
-        if not isinstance(datetime_added, datetime):
-            raise TypeError("datetime_added must be a string")
+        if not isinstance(last_updated, datetime):
+            raise TypeError("last_updated must be a string")
 
+        self._id = _id
         self.title = title
         self.price_in_yen = price_in_yen
         self.is_r18 = is_r18
         self.image_preview_url = image_preview_url
         self.url = url
-        self.datetime_added = datetime_added
+        self.last_updated = last_updated
         self.circle_name = circle_name
         self.author_names = author_names
         self.genres = genres

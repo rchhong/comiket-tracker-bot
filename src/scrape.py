@@ -7,7 +7,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import PoolManager
 from urllib3.util import create_urllib3_context
 
-from src.doujin import Doujin
+from collections import namedtuple
 
 
 class AddedCipherAdapter(HTTPAdapter):
@@ -48,6 +48,21 @@ class AddedCipherAdapter(HTTPAdapter):
         )
 
 
+DoujinMetadata = namedtuple(
+    "DoujinMetadata",
+    [
+        "title",
+        "price_in_yen",
+        "circle_name",
+        "author_names",
+        "genres",
+        "events",
+        "is_r18",
+        "image_preview_url",
+    ],
+)
+
+
 class DoujinScraper:
     """Wrapper class that encapsulates the logic used to scrape Melonbooks.
 
@@ -71,7 +86,7 @@ class DoujinScraper:
         self.session = Session()
         self.session.mount("https://www.melonbooks.co.jp", AddedCipherAdapter())
 
-    def scrape_url(self, url: str) -> Doujin:
+    def scrape_url(self, url: str) -> DoujinMetadata:
         """Scrapes a given URL for relevant information regarding a doujin.
 
         Parameters
@@ -81,8 +96,8 @@ class DoujinScraper:
 
         Returns
         -------
-        Doujin
-            A Melonbooks Doujin object
+        DoujinMetadata
+            All relevant data about a Melonbooks Doujin
 
         """
         if not isinstance(url, str):
@@ -150,14 +165,13 @@ class DoujinScraper:
 
             is_r18 = info_table.findChildren("td")[-1].get_text().strip() == "18禁"
 
-        return Doujin(
-            title=title,
-            price_in_yen=price_in_yen,
-            circle_name=circle_name,
-            author_names=author_names,
-            genres=genres,
-            events=events,
-            is_r18=is_r18,
-            image_preview_url=image_preview_url,
-            url=url,
+        return DoujinMetadata(
+            title,
+            price_in_yen,
+            circle_name,
+            author_names,
+            genres,
+            events,
+            is_r18,
+            image_preview_url,
         )

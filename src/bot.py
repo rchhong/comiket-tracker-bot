@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands
 
 from src.doujin_dao import DoujinDAO
+from src.user_dao import UserDAO
 from src.currency import Currency
 from src.scrape import DoujinScraper
 
@@ -26,6 +27,7 @@ currency = Currency(CURRENCY_API_KEY)
 
 doujin_scraper = DoujinScraper()
 doujin_dao = DoujinDAO(os.getenv("DATABASE_URL"))
+user_dao = UserDAO(os.getenv("DATABASE_URL"), doujin_dao)
 
 
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
@@ -44,12 +46,59 @@ async def add(ctx: commands.Context, url: str):
 
     """
 
+    # TODO: Force updates to doujin/user metadata after a interval of time
     try:
-        doujin = doujin_dao.get_doujin(url)
+        # Get doujin data if this is the first time
+        doujin = doujin_dao.get_doujin_by_url(url)
         if not doujin:
-            doujin = doujin_scraper.scrape_url(url)
-            doujin_id = doujin_dao.add_doujin(doujin)
-            doujin._id = doujin_id
+            (
+                title,
+                price_in_yen,
+                circle_name,
+                author_names,
+                genres,
+                events,
+                is_r18,
+                image_preview_url,
+            ) = doujin_scraper.scrape_url(url)
+            doujin = doujin_dao.add_doujin(
+                url,
+                title,
+                price_in_yen,
+                circle_name,
+                author_names,
+                genres,
+                events,
+                is_r18,
+                image_preview_url,
+            )
+
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+
+    try:
+        discord_id = ctx.author.id
+        user = user_dao.get_user_by_discord_id(discord_id)
+        # Creates user on first interaction
+        if not user:
+            # Add reservation
+            name = (
+                ctx.author.global_name
+                if ctx.author.global_name
+                else ctx.author.display_name
+            )
+
+            user = user_dao.add_user(discord_id, name)
+
+        if user.has_reserved(doujin._id):
+            # Already reserved, print message
+            message = f"<@{ctx.author.id}> has already reserved {doujin.title}"
+        else:
+            # Add reservation
+            user_dao.add_reservation(user, doujin)
+            message = f"Added reserveration {doujin.title} for <@{ctx.author.id}>"
+
     except Exception as e:
         await ctx.send(f"Error: {e}")
         raise e
@@ -68,6 +117,4 @@ async def add(ctx: commands.Context, url: str):
     embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
 
-    await ctx.send(
-        f"Added reserveration {doujin.title} for <@{ctx.author.id}>", embed=embed
-    )
+    await ctx.send(message, embed=embed)
