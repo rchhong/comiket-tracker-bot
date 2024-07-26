@@ -10,7 +10,7 @@ from src.doujin_dao import DoujinDAO
 from src.user_dao import UserDAO
 from src.currency import Currency
 from src.scrape import DoujinScraper
-from src.utils import generate_doujin_embed
+from src.utils import generate_doujin_embed, list_doujins
 
 
 # Logger
@@ -104,8 +104,7 @@ async def add(ctx: commands.Context, url: str):
         await ctx.send(f"Error: {e}")
         raise e
 
-    embed = generate_doujin_embed(doujin, currency)
-    await ctx.send(message, embed=embed)
+    await generate_doujin_embed(ctx, message, doujin, currency)
 
 
 @bot.command(brief="Removes a reservation to doujin to the database")
@@ -153,5 +152,19 @@ async def rm(ctx: commands.Context, url: str):
         await ctx.send(f"Error: {e}")
         raise e
 
-    embed = generate_doujin_embed(doujin, currency)
-    await ctx.send(message, embed=embed)
+    await generate_doujin_embed(ctx, message, doujin, currency)
+
+
+@bot.command(brief="Lists all doujin reservation made by the user")
+async def ls(ctx: commands.Context):
+    try:
+        discord_id = ctx.author.id
+        user = user_dao.get_user_by_discord_id(discord_id)
+        # Creates user on first interaction
+        if not user:
+            raise Exception("No reservations made")
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+
+    await list_doujins(ctx, user.reservations, currency)
