@@ -10,6 +10,7 @@ from src.doujin_dao import DoujinDAO
 from src.user_dao import UserDAO
 from src.currency import Currency
 from src.scrape import DoujinScraper
+from src.utils import generate_doujin_embed
 
 
 # Logger
@@ -33,9 +34,9 @@ user_dao = UserDAO(os.getenv("DATABASE_URL"), doujin_dao)
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
 
 
-@bot.command(brief="Adds a doujin to the database")
+@bot.command(brief="Adds a reservation to doujin to the database")
 async def add(ctx: commands.Context, url: str):
-    """Command to add a duojin reservation for a user.
+    """Command to add a doujin reservation for a user.
 
     Parameters
     ----------
@@ -103,18 +104,54 @@ async def add(ctx: commands.Context, url: str):
         await ctx.send(f"Error: {e}")
         raise e
 
-    price_in_usd = currency.convert_to(doujin.price_in_yen)
-    price_in_usd_formatted = "{:.2f}".format(price_in_usd)
+    embed = generate_doujin_embed(doujin, currency)
+    await ctx.send(message, embed=embed)
 
-    # Add embed
-    embed = discord.Embed(
-        url=url,
-        title=f"{doujin.title} - {doujin.circle_name} ({','.join(doujin.author_names)})",
-    )
-    embed.set_thumbnail(url=doujin.image_preview_url)
-    embed.add_field(name="Price (¥)", value=doujin.price_in_yen, inline=True)
-    embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
-    embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
-    embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
 
+@bot.command(brief="Removes a reservation to doujin to the database")
+async def rm(ctx: commands.Context, url: str):
+    """Command to rm a doujin reservation for a user.
+
+    Parameters
+    ----------
+    ctx : commands.Context
+        Discord.py command context.
+    url : str
+        Melonbooks URL to create a reservation for.
+
+    """
+
+    # TODO: Force updates to doujin/user metadata after a interval of time
+    try:
+        doujin = doujin_dao.get_doujin_by_url(url)
+        if not doujin:
+            raise Exception("Cannot remove doujin that doesn't exist in the database.")
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+
+    try:
+        discord_id = ctx.author.id
+        user = user_dao.get_user_by_discord_id(discord_id)
+        # Creates user on first interaction
+        if not user:
+            raise Exception(
+                "Cannot remove doujin from user that doesn't exist in the database."
+            )
+
+        if not user.has_reserved(doujin._id):
+            # Already reserved, print message
+            message = (
+                f"<@{ctx.author.id}> has not reserved {doujin.title}, cannot remove."
+            )
+        else:
+            # Add reservation
+            user_dao.remove_reservation(user, doujin)
+            message = f"Removed reserveration {doujin.title} for <@{ctx.author.id}>"
+
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+
+    embed = generate_doujin_embed(doujin, currency)
     await ctx.send(message, embed=embed)

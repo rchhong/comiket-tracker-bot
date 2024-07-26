@@ -147,3 +147,44 @@ class UserDAO:
             return user
         else:
             raise Exception("Database failed to update user's reservations")
+
+    def remove_reservation(self, user: User, doujin: Doujin) -> User:
+        """Remove a reservation to a user.
+
+        Parameters
+        ----------
+        user : User
+            User object
+        doujin : Doujin
+            Doujin object
+
+        Returns
+        -------
+        User
+            Updated user object
+
+        """
+        now = datetime.now(UTC)
+
+        parameters = {"_id": user._id}
+        update = {
+            "$pull": {
+                "reservations": {
+                    "doujin_id": doujin._id,
+                }
+            },
+            "$set": {"last_updated": now},
+        }
+
+        result = self.db.users.update_one(parameters, update)
+        if result.modified_count == 1:
+            user.last_updated = now
+            updated_reservations = []
+            for reservation in user.reservations:
+                if reservation.doujin._id != doujin._id:
+                    updated_reservations.append(reservation)
+
+            user.reservations = updated_reservations
+            return user
+        else:
+            raise Exception("Database failed to update user's reservations")
