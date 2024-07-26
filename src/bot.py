@@ -10,7 +10,7 @@ from src.doujin_dao import DoujinDAO
 from src.user_dao import UserDAO
 from src.currency import Currency
 from src.scrape import DoujinScraper
-from src.utils import generate_doujin_embed, list_doujins
+from src.utils import generate_doujin_embed, list_doujins, export_doujin_data
 
 
 # Logger
@@ -157,12 +157,16 @@ async def rm(ctx: commands.Context, url: str):
 
 @bot.command(brief="Lists all doujin reservation made by the user")
 async def ls(ctx: commands.Context, user: discord.Member | None = None):
-    """List all doujins reserved by a user
+    """List all doujins reserved by a user.
 
     Parameters
     ----------
     ctx : commands.Context
         Discord Context
+
+    user : discord.Member | None
+        The discord user to show the doujin reservations for.
+        If None (i.e. the command is ran without an argument), the target will be the user who sent the message.
 
     """
     if user is not None:
@@ -184,3 +188,15 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
         raise e
 
     await list_doujins(message, ctx, reservations, currency)
+
+
+# @bot.command(brief="Show doujin details given a list of Ids")
+# async def show(ctx: commands.Context):
+#     pass
+
+
+@bot.command(brief="Export doujin reservations to a CSV")
+async def export(ctx: commands.Context):
+    all_user_data = user_dao.retrieve_all_users()
+
+    await export_doujin_data(ctx, all_user_data, currency)

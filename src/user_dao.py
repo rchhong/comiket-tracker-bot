@@ -1,4 +1,4 @@
-"""User Data Access Object (DAO)"""
+"""User Data Access Object (DAO)."""
 
 from pymongo import MongoClient
 from src.doujin import Doujin
@@ -10,7 +10,7 @@ import os
 
 
 class UserDAO:
-    """User Data Access Object (DAO)
+    """User Data Access Object (DAO).
 
     Attributes
     ----------
@@ -20,7 +20,7 @@ class UserDAO:
     """
 
     def __init__(self, connection_str: str, doujin_dao: DoujinDAO) -> None:
-        """Initialize the User DAO
+        """Initialize the User DAO.
 
         Parameters
         ----------
@@ -34,7 +34,7 @@ class UserDAO:
         self.doujin_dao = doujin_dao
 
     def add_user(self, discord_id: int, name: str) -> User:
-        """Add a user to the database
+        """Add a user to the database.
 
         Parameters
         ----------
@@ -188,3 +188,18 @@ class UserDAO:
             return user
         else:
             raise Exception("Database failed to update user's reservations")
+
+    def retrieve_all_users(self) -> list[Doujin]:
+        """Retrieve all users present in the database
+
+        Returns
+        -------
+        list[Doujin]
+            List of all users
+
+        """
+        ret = []
+        for user_metadata in self.db.users.find(filter=None, projection=["discord_id"]):
+            ret.append(self.get_user_by_discord_id(user_metadata["discord_id"]))
+
+        return ret
