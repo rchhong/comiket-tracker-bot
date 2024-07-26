@@ -156,15 +156,31 @@ async def rm(ctx: commands.Context, url: str):
 
 
 @bot.command(brief="Lists all doujin reservation made by the user")
-async def ls(ctx: commands.Context):
-    try:
+async def ls(ctx: commands.Context, user: discord.Member | None = None):
+    """List all doujins reserved by a user
+
+    Parameters
+    ----------
+    ctx : commands.Context
+        Discord Context
+
+    """
+    if user is not None:
+        discord_id = user.id
+        message = f"List of doujins added by <@{user.id}>"
+    else:
         discord_id = ctx.author.id
-        user = user_dao.get_user_by_discord_id(discord_id)
+        message = "List of added Doujins"
+    discord_id = user.id if user is not None else ctx.author.id
+    reservations = []
+    try:
+        user_data = user_dao.get_user_by_discord_id(discord_id)
         # Creates user on first interaction
-        if not user:
-            raise Exception("No reservations made")
+        if user_data:
+            reservations = user_data.reservations
+
     except Exception as e:
         await ctx.send(f"Error: {e}")
         raise e
 
-    await list_doujins(ctx, user.reservations, currency)
+    await list_doujins(message, ctx, reservations, currency)

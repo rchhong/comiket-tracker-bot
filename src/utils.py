@@ -42,13 +42,28 @@ async def generate_doujin_embed(
     embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
     embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
+    embed.add_field(name="Id", value=doujin._id, inline=False)
 
     await ctx.reply(message, embed=embed)
 
 
 async def list_doujins(
-    ctx: Context, reservations: list[Reservation], currency: Currency
+    message: str, ctx: Context, reservations: list[Reservation], currency: Currency
 ) -> None:
+    """Generate the embed that list the doujins a user has reserved.
+
+    Parameters
+    ----------
+    message : str
+        Message to accompany the embed
+    ctx : Context
+        Discord context
+    reservations : list[Reservation]
+        List of reservations
+    currency : Currency
+        Currency API wrapper
+
+    """
     embeds = []
     list_string = ""
     page = 0
@@ -61,14 +76,14 @@ async def list_doujins(
             cur_embed.add_field(name=f"Page: {page + 1}", value=list_string)
             list_string = ""
             page += 1
-            if page % 3 == 0:
+            if page % 1 == 0:
                 # cur_embed.description = f'Embed {int (page/4) + 1}'
                 embeds.append(cur_embed)
                 cur_embed = Embed()
 
         url = doujin.url
         title = doujin.title
-        line = f'{index + 1}. ¥{doujin.price_in_yen} - [{title[:10] + "..." if len(title) > 12 else title}]({url})\n'
+        line = f'{index + 1}. ¥{doujin.price_in_yen} - [{title[:10] + "..." if len(title) > 12 else title}]({url}) ({doujin._id})\n'
 
         price_yen_total += doujin.price_in_yen
         list_string += line
@@ -86,7 +101,7 @@ async def list_doujins(
         total += sum([len(str(field.value)) for field in embed.fields])
         if total > 5000:
             await ctx.reply(
-                content=f"List of added Doujins{' Continued' if has_sent else ''}: ",
+                content=f"{message}{' Continued' if has_sent else ''}: ",
                 embeds=embeds[prev:ind],
             )
             prev = ind
@@ -94,7 +109,7 @@ async def list_doujins(
             has_sent = True
     if total != 0:
         await ctx.reply(
-            content=f"List of added Doujins{' Continued' if has_sent else ''}: ",
+            content=f"{message}{' Continued' if has_sent else ''}: ",
             embeds=embeds[prev:],
         )
     price_usd = "{:.2f}".format(currency.convert_to(price_yen_total))
