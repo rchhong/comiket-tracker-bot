@@ -5,16 +5,16 @@ from pathlib import Path
 import csv
 
 import discord
-from src.reservation import Reservation
+from src.reservation import DoujinReservation
 from src.currency import Currency
-from src.doujin import Doujin
-from src.user import User
+from src.doujin_with_reservation import DoujinWithReservationData
+from src.user_with_reservation import UserWithReservationData
 from discord import Embed
 from discord.ext.commands import Context
 
 
 async def generate_doujin_embed(
-    ctx: Context, message: str, doujin: Doujin, currency: Currency
+    ctx: Context, message: str, doujin: DoujinWithReservationData, currency: Currency
 ):
     """Generate the embed that displays various doujin metadata.
 
@@ -54,7 +54,10 @@ async def generate_doujin_embed(
 
 
 async def list_doujins(
-    message: str, ctx: Context, reservations: list[Reservation], currency: Currency
+    message: str,
+    ctx: Context,
+    reservations: list[DoujinReservation],
+    currency: Currency,
 ) -> None:
     """Generate the embed that list the doujins a user has reserved.
 
@@ -123,20 +126,21 @@ async def list_doujins(
 
 
 async def export_doujin_data(
-    ctx: Context, all_user_data: list[User], currency: Currency
+    ctx: Context,
+    all_user_data: list[UserWithReservationData],
+    all_doujin_data: list[DoujinWithReservationData],
 ):
+    # TODO: Add price_in_usd as a field as part of each doujin
     relevant_user_data = []
     for user_data in all_user_data:
         total_cost_in_yen = sum(
             [reservation.doujin.price_in_yen for reservation in user_data.reservations]
         )
-        total_cost_in_usd = currency.convert_to(total_cost_in_yen)
         relevant_user_data.append(
             {
                 "discord_id": user_data.discord_id,
                 "num_items": len(user_data.reservations),
                 "total_cost_in_yen": total_cost_in_yen,
-                "total_cost_in_usd": total_cost_in_usd,
             }
         )
     relevant_user_data = sorted(
@@ -145,58 +149,44 @@ async def export_doujin_data(
 
     message = ""
     for user_data in relevant_user_data:
-        print(user_data)
-        message += f"<@{user_data['discord_id']}> purchased {user_data['num_items']} for a total of ¥{user_data['total_cost_in_yen']} (${user_data['total_cost_in_usd']})\n"
+        message += f"<@{user_data['discord_id']}> purchased {user_data['num_items']} for a total of ¥{user_data['total_cost_in_yen']}\n"
 
-    csv_file_path = generate_csv(all_user_data, currency)
+    csv_file_path = generate_csv(all_doujin_data)
     await ctx.send(message, file=discord.File(csv_file_path))
 
 
-def generate_csv(all_user_data: list[User], currency: Currency):
-    # TODO: Create an array field for each doujin that contains the users that have reserved it.
-    # To avoid recursion hell, the data classes for Doujin and User should be modified such that
-    # the interior data classes don't contain references to the other.
-    # For instance, the data class for Reservations within a User should remove the list_of_users field that would be present in the Doujin class
-    # Here, this would save a large amount of complexity.
+def generate_csv(all_doujin_data: list[DoujinWithReservationData]):
+    all_usernames = []
 
-    all_usernames = [user.name for user in all_user_data]
-    column_names = [
-        "doujin_id",
-        "title",
-        "price_in_yen",
-    ] + all_usernames
+    rows = []
+    for doujin in all_doujin_data:
+        row = {
+            "doujin_id": doujin._id,
+            "url": doujin.url,
+            "title": doujin.title,
+            "price_in_yen": doujin.price_in_yen,
+        }
 
-    # TODO: Add price_in_usd as a field as part of each doujin
-    id_to_row = {}
-    for user in all_user_data:
-        username = user.name
-        for reservation in user.reservations:
-            (
-                doujin_id,
-                title,
-                price_in_yen,
-            ) = (
-                reservation.doujin._id,
-                reservation.doujin.title,
-                reservation.doujin.price_in_yen,
-            )
+        for reservation in doujin.reservations:
+            username = reservation.user.name
+            row[username] = "X"
+            all_usernames.append(username)
 
-            if doujin_id not in id_to_row:
-                id_to_row[doujin_id] = {
-                    "doujin_id": doujin_id,
-                    "title": title,
-                    "price_in_yen": price_in_yen,
-                    username: "X",
-                }
-            else:
-                id_to_row[doujin_id][username] = "X"
+        rows.append(row.copy())
 
     file_path = Path(f"doujin_export_{datetime.now(UTC)}.csv")
+    column_names = [
+        "doujin_id",
+        "url",
+        "title",
+        "price_in_yen",
+    ] + sorted(all_usernames)
+
     with open(file_path, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=column_names)
 
         writer.writeheader()
-        for row in id_to_row.values():
+        for row in rows:
             writer.writerow(row)
 
     return file_path

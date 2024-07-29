@@ -10,3 +10,4 @@ credentials.json
 service.json
 token.json
 
+*.csv

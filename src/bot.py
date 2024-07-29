@@ -6,8 +6,7 @@ import os
 import discord
 from discord.ext import commands
 
-from src.doujin_dao import DoujinDAO
-from src.user_dao import UserDAO
+from src.dao import DAO
 from src.currency import Currency
 from src.scrape import DoujinScraper
 from src.utils import generate_doujin_embed, list_doujins, export_doujin_data
@@ -27,8 +26,10 @@ assert CURRENCY_API_KEY is not None
 currency = Currency(CURRENCY_API_KEY)
 
 doujin_scraper = DoujinScraper()
-doujin_dao = DoujinDAO(os.getenv("DATABASE_URL"))
-user_dao = UserDAO(os.getenv("DATABASE_URL"), doujin_dao)
+database_url = os.getenv("DATABASE_URL")
+assert database_url is not None
+
+dao = DAO(database_url)
 
 
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
@@ -50,7 +51,7 @@ async def add(ctx: commands.Context, url: str):
     # TODO: Force updates to doujin/user metadata after a interval of time
     try:
         # Get doujin data if this is the first time
-        doujin = doujin_dao.get_doujin_by_url(url)
+        doujin = dao.get_doujin_by_url(url)
         if not doujin:
             (
                 title,
@@ -62,7 +63,7 @@ async def add(ctx: commands.Context, url: str):
                 is_r18,
                 image_preview_url,
             ) = doujin_scraper.scrape_url(url)
-            doujin = doujin_dao.add_doujin(
+            doujin = dao.add_doujin(
                 url,
                 title,
                 price_in_yen,
@@ -80,7 +81,7 @@ async def add(ctx: commands.Context, url: str):
 
     try:
         discord_id = ctx.author.id
-        user = user_dao.get_user_by_discord_id(discord_id)
+        user = dao.get_user_by_discord_id(discord_id)
         # Creates user on first interaction
         if not user:
             # Add reservation
@@ -90,14 +91,14 @@ async def add(ctx: commands.Context, url: str):
                 else ctx.author.display_name
             )
 
-            user = user_dao.add_user(discord_id, name)
+            user = dao.add_user(discord_id, name)
 
         if user.has_reserved(doujin._id):
             # Already reserved, print message
             message = f"<@{ctx.author.id}> has already reserved {doujin.title}"
         else:
             # Add reservation
-            user_dao.add_reservation(user, doujin)
+            dao.add_reservation(user, doujin)
             message = f"Added reserveration {doujin.title} for <@{ctx.author.id}>"
 
     except Exception as e:
@@ -122,7 +123,7 @@ async def rm(ctx: commands.Context, url: str):
 
     # TODO: Force updates to doujin/user metadata after a interval of time
     try:
-        doujin = doujin_dao.get_doujin_by_url(url)
+        doujin = dao.get_doujin_by_url(url)
         if not doujin:
             raise Exception("Cannot remove doujin that doesn't exist in the database.")
     except Exception as e:
@@ -131,7 +132,7 @@ async def rm(ctx: commands.Context, url: str):
 
     try:
         discord_id = ctx.author.id
-        user = user_dao.get_user_by_discord_id(discord_id)
+        user = dao.get_user_by_discord_id(discord_id)
         # Creates user on first interaction
         if not user:
             raise Exception(
@@ -145,7 +146,7 @@ async def rm(ctx: commands.Context, url: str):
             )
         else:
             # Add reservation
-            user_dao.remove_reservation(user, doujin)
+            dao.remove_reservation(user, doujin)
             message = f"Removed reserveration {doujin.title} for <@{ctx.author.id}>"
 
     except Exception as e:
@@ -178,7 +179,7 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
     discord_id = user.id if user is not None else ctx.author.id
     reservations = []
     try:
-        user_data = user_dao.get_user_by_discord_id(discord_id)
+        user_data = dao.get_user_by_discord_id(discord_id)
         # Creates user on first interaction
         if user_data:
             reservations = user_data.reservations
@@ -197,6 +198,7 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
 
 @bot.command(brief="Export doujin reservations to a CSV")
 async def export(ctx: commands.Context):
-    all_user_data = user_dao.retrieve_all_users()
+    all_user_data = dao.retrieve_all_users()
+    all_doujin_data = dao.retrieve_all_doujin()
 
-    await export_doujin_data(ctx, all_user_data, currency)
+    await export_doujin_data(ctx, all_user_data, all_doujin_data)
