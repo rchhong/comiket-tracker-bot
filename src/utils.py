@@ -8,14 +8,13 @@ import discord
 from discord import Embed
 from discord.ext.commands import Context
 
-from src.currency import Currency
 from src.doujin_with_reservation import DoujinWithReservationData
 from src.reservation import DoujinReservation
 from src.user_with_reservation import UserWithReservationData
 
 
 async def generate_doujin_embed(
-    ctx: Context, message: str, doujin: DoujinWithReservationData, currency: Currency
+    ctx: Context, message: str, doujin: DoujinWithReservationData
 ):
     """Generate the embed that displays various doujin metadata.
 
@@ -27,8 +26,6 @@ async def generate_doujin_embed(
         Message to include with the embed
     doujin : Doujin
         Doujin embed
-    currency : Currency
-        Current API wrapper
 
     Returns
     -------
@@ -36,9 +33,6 @@ async def generate_doujin_embed(
         Discord Embed
 
     """
-    price_in_usd = currency.convert_to(doujin.price_in_yen)
-    price_in_usd_formatted = "{:.2f}".format(price_in_usd)
-
     # Add embed
     embed = Embed(
         url=doujin.url,
@@ -46,7 +40,10 @@ async def generate_doujin_embed(
     )
     embed.set_thumbnail(url=doujin.image_preview_url)
     embed.add_field(name="Price (¥)", value=doujin.price_in_yen, inline=True)
-    embed.add_field(name="Price ($)", value=price_in_usd_formatted, inline=True)
+    embed.add_field(
+        name="Price ($)", value="{:.2f}".format(doujin.price_in_usd), inline=True
+    )
+
     embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
     embed.add_field(name="Id", value=doujin._id, inline=False)

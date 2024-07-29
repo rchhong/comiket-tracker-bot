@@ -4,6 +4,7 @@ import logging
 import os
 
 import discord
+from bson.objectid import ObjectId
 from discord.ext import commands
 
 from src.currency import Currency
@@ -105,7 +106,7 @@ async def add(ctx: commands.Context, url: str):
         await ctx.send(f"Error: {e}")
         raise e
 
-    await generate_doujin_embed(ctx, message, doujin, currency)
+    await generate_doujin_embed(ctx, message, doujin)
 
 
 @bot.command(brief="Removes a reservation to doujin to the database")
@@ -152,7 +153,7 @@ async def rm(ctx: commands.Context, url: str):
         await ctx.send(f"Error: {e}")
         raise e
 
-    await generate_doujin_embed(ctx, message, doujin, currency)
+    await generate_doujin_embed(ctx, message, doujin)
 
 
 @bot.command(brief="Lists all doujin reservation made by the user")
@@ -190,9 +191,29 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
     await list_doujins(message, ctx, reservations)
 
 
-# @bot.command(brief="Show doujin details given a list of Ids")
-# async def show(ctx: commands.Context):
-#     pass
+@bot.command(brief="Show doujin details given an ID")
+async def show(ctx: commands.Context, id: str):
+    """Show data related to a doujin given an Id.
+
+    Parameters
+    ----------
+    ctx : commands.Context
+        Discord context
+    id : str
+        Id of doujin object
+
+    """
+    try:
+        doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(id))
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+    pass
+
+    if doujin is not None:
+        await generate_doujin_embed(ctx, "", doujin)
+    else:
+        await ctx.send("Error: unable to find doujin with that ID")
 
 
 @bot.command(brief="Export doujin reservations to a CSV")
