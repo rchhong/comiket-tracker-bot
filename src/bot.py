@@ -25,11 +25,13 @@ CURRENCY_API_KEY = os.getenv("CURRENCY_API_KEY")
 assert CURRENCY_API_KEY is not None
 currency = Currency(CURRENCY_API_KEY)
 
+# Melonbook Scraper
 doujin_scraper = DoujinScraper()
+
+# Database setup
 database_url = os.getenv("DATABASE_URL")
 assert database_url is not None
-
-dao = DAO(database_url)
+dao = DAO(database_url, currency)
 
 
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
@@ -188,7 +190,7 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
         await ctx.send(f"Error: {e}")
         raise e
 
-    await list_doujins(message, ctx, reservations, currency)
+    await list_doujins(message, ctx, reservations)
 
 
 # @bot.command(brief="Show doujin details given a list of Ids")

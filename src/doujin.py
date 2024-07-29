@@ -28,6 +28,7 @@ class Doujin:
         _id: ObjectId,
         title: str,
         price_in_yen: int,
+        price_in_usd: float,
         image_preview_url: str,
         url: str,
         is_r18: bool = False,
@@ -74,6 +75,9 @@ class Doujin:
         if not isinstance(price_in_yen, int):
             raise TypeError("price_in_yen must be an integer")
 
+        if not isinstance(price_in_usd, float):
+            raise TypeError("price_in_usd must be an float")
+
         if not isinstance(image_preview_url, str):
             raise TypeError("image_preview_url must be a string")
 
@@ -110,6 +114,7 @@ class Doujin:
         self._id = _id
         self.title = title
         self.price_in_yen = price_in_yen
+        self.price_in_usd = price_in_usd
         self.is_r18 = is_r18
         self.image_preview_url = image_preview_url
         self.url = url

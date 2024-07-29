@@ -79,6 +79,10 @@ class DoujinWithReservationData:
         return self.doujin.price_in_yen
 
     @property
+    def price_in_usd(self) -> int:
+        return self.doujin.price_in_usd
+
+    @property
     def image_preview_url(self) -> str:
         return self.doujin.image_preview_url
 

@@ -57,7 +57,6 @@ async def list_doujins(
     message: str,
     ctx: Context,
     reservations: list[DoujinReservation],
-    currency: Currency,
 ) -> None:
     """Generate the embed that list the doujins a user has reserved.
 
@@ -69,8 +68,6 @@ async def list_doujins(
         Discord context
     reservations : list[Reservation]
         List of reservations
-    currency : Currency
-        Currency API wrapper
 
     """
     embeds = []
@@ -79,6 +76,7 @@ async def list_doujins(
     cur_embed = Embed()
 
     price_yen_total = 0
+    price_usd_total = 0
     for index, reservation in enumerate(reservations):
         doujin = reservation.doujin
         if len(list_string) > 600:
@@ -92,9 +90,10 @@ async def list_doujins(
 
         url = doujin.url
         title = doujin.title
-        line = f'{index + 1}. ¥{doujin.price_in_yen} - [{title[:10] + "..." if len(title) > 12 else title}]({url}) ({doujin._id})\n'
+        line = f'{index + 1}. ¥{doujin.price_in_yen} (${'{:.2f}'.format(doujin.price_in_usd)}) - [{title[:10] + "..." if len(title) > 12 else title}]({url}) ({doujin._id})\n'
 
         price_yen_total += doujin.price_in_yen
+        price_usd_total += doujin.price_in_usd
         list_string += line
 
     cur_embed.add_field(name=f"Page: {page + 1}", value=list_string)
@@ -121,8 +120,10 @@ async def list_doujins(
             content=f"{message}{' Continued' if has_sent else ''}: ",
             embeds=embeds[prev:],
         )
-    price_usd = "{:.2f}".format(currency.convert_to(price_yen_total))
-    await ctx.reply(content=f"Total cost: ¥{price_yen_total}, ${price_usd}")
+
+    await ctx.reply(
+        content=f"Total cost: ¥{price_yen_total}, ${'{:.2f}'.format(price_usd_total)}"
+    )
 
 
 async def export_doujin_data(
@@ -130,17 +131,21 @@ async def export_doujin_data(
     all_user_data: list[UserWithReservationData],
     all_doujin_data: list[DoujinWithReservationData],
 ):
-    # TODO: Add price_in_usd as a field as part of each doujin
+    # TODO: This should be it's own database query instead of fetching everything (but this might be a bit hard with MongoDB)
     relevant_user_data = []
     for user_data in all_user_data:
         total_cost_in_yen = sum(
             [reservation.doujin.price_in_yen for reservation in user_data.reservations]
+        )
+        total_cost_in_usd = sum(
+            [reservation.doujin.price_in_usd for reservation in user_data.reservations]
         )
         relevant_user_data.append(
             {
                 "discord_id": user_data.discord_id,
                 "num_items": len(user_data.reservations),
                 "total_cost_in_yen": total_cost_in_yen,
+                "total_cost_in_usd": total_cost_in_usd,
             }
         )
     relevant_user_data = sorted(
@@ -156,7 +161,7 @@ async def export_doujin_data(
 
 
 def generate_csv(all_doujin_data: list[DoujinWithReservationData]):
-    all_usernames = []
+    all_usernames = set()
 
     rows = []
     for doujin in all_doujin_data:
@@ -165,12 +170,13 @@ def generate_csv(all_doujin_data: list[DoujinWithReservationData]):
             "url": doujin.url,
             "title": doujin.title,
             "price_in_yen": doujin.price_in_yen,
+            "price_in_usd": doujin.price_in_usd,
         }
 
         for reservation in doujin.reservations:
             username = reservation.user.name
             row[username] = "X"
-            all_usernames.append(username)
+            all_usernames.add(username)
 
         rows.append(row.copy())
 
@@ -180,7 +186,8 @@ def generate_csv(all_doujin_data: list[DoujinWithReservationData]):
         "url",
         "title",
         "price_in_yen",
-    ] + sorted(all_usernames)
+        "price_in_usd",
+    ] + sorted(list(all_usernames))
 
     with open(file_path, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=column_names)

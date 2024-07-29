@@ -4,6 +4,7 @@
 from datetime import datetime, UTC
 
 from bson.objectid import ObjectId
+from src.currency import Currency
 from src.doujin import Doujin
 from src.doujin_with_reservation import DoujinWithReservationData
 from src.user import User
@@ -22,10 +23,11 @@ class DAO:
     Attributes
     ----------
     db : MongoDB Client
+    currency : Currency API
 
     """
 
-    def __init__(self, connection_str: str) -> None:
+    def __init__(self, connection_str: str, currency: Currency) -> None:
         """Initialize the Doujin DAO.
 
         Parameters
@@ -33,8 +35,12 @@ class DAO:
         connection_str : str
             A MongoDB connection string URL
 
+        currency: Currency
+            Currency API
+
         """
         self.db = MongoClient(connection_str).get_database(os.getenv("MONGO_DB_NAME"))
+        self.currency = currency
 
     def add_doujin(
         self,
@@ -48,7 +54,7 @@ class DAO:
         is_r18: bool,
         image_preview_url: str,
     ) -> DoujinWithReservationData:
-        """Adds a doujin to the database
+        """Add a doujin to the database.
 
         Parameters
         ----------
@@ -114,9 +120,12 @@ class DAO:
                 f"Expected 'image_preview_url' to be of type 'str', but got '{type(image_preview_url).__name__}'"
             )
         now = datetime.now(UTC)
+        price_in_usd = self.currency.convert_to(price_in_yen)
+
         parameters = {
             "title": title,
             "price_in_yen": price_in_yen,
+            "price_in_usd": price_in_usd,
             "image_preview_url": image_preview_url,
             "url": url,
             "is_r18": is_r18,
@@ -133,6 +142,7 @@ class DAO:
             _id=id,
             title=title,
             price_in_yen=price_in_yen,
+            price_in_usd=price_in_usd,
             image_preview_url=image_preview_url,
             url=url,
             is_r18=is_r18,
@@ -175,6 +185,7 @@ class DAO:
                 _id=doujin_metadata["_id"],
                 title=doujin_metadata["title"],
                 price_in_yen=doujin_metadata["price_in_yen"],
+                price_in_usd=doujin_metadata["price_in_usd"],
                 image_preview_url=doujin_metadata["image_preview_url"],
                 url=doujin_metadata["url"],
                 is_r18=doujin_metadata["is_r18"],
@@ -233,6 +244,7 @@ class DAO:
                 _id=doujin_metadata["_id"],
                 title=doujin_metadata["title"],
                 price_in_yen=doujin_metadata["price_in_yen"],
+                price_in_usd=doujin_metadata["price_in_usd"],
                 image_preview_url=doujin_metadata["image_preview_url"],
                 url=doujin_metadata["url"],
                 is_r18=doujin_metadata["is_r18"],
@@ -261,6 +273,7 @@ class DAO:
                 _id=doujin_metadata["_id"],
                 title=doujin_metadata["title"],
                 price_in_yen=doujin_metadata["price_in_yen"],
+                price_in_usd=doujin_metadata["price_in_usd"],
                 image_preview_url=doujin_metadata["image_preview_url"],
                 url=doujin_metadata["url"],
                 is_r18=doujin_metadata["is_r18"],
@@ -685,6 +698,7 @@ class DAO:
                 _id=doujin_metadata["_id"],
                 title=doujin_metadata["title"],
                 price_in_yen=doujin_metadata["price_in_yen"],
+                price_in_usd=doujin_metadata["price_in_usd"],
                 image_preview_url=doujin_metadata["image_preview_url"],
                 url=doujin_metadata["url"],
                 is_r18=doujin_metadata["is_r18"],
