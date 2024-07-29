@@ -1,6 +1,7 @@
 """Store a user's data."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from bson.objectid import ObjectId
 
 
@@ -14,6 +15,7 @@ class User:
     name : Global name of the discord user.
     If the global name is not available, the server name will be used instead.
     last_updated : last update to user
+
     """
 
     def __init__(

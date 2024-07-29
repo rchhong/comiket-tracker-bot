@@ -1,5 +1,8 @@
-from src.bot import bot
+"""Entry point for the python file to create the bot."""
+
 import os
+
+from src.bot import bot
 
 # Load environment variables
 

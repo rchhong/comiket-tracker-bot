@@ -1,16 +1,17 @@
 """Contains various utility functions, mostly dealing with the generation of discord messages."""
 
-from datetime import datetime, UTC
-from pathlib import Path
 import csv
+from datetime import UTC, datetime
+from pathlib import Path
 
 import discord
-from src.reservation import DoujinReservation
-from src.currency import Currency
-from src.doujin_with_reservation import DoujinWithReservationData
-from src.user_with_reservation import UserWithReservationData
 from discord import Embed
 from discord.ext.commands import Context
+
+from src.currency import Currency
+from src.doujin_with_reservation import DoujinWithReservationData
+from src.reservation import DoujinReservation
+from src.user_with_reservation import UserWithReservationData
 
 
 async def generate_doujin_embed(
@@ -131,6 +132,21 @@ async def export_doujin_data(
     all_user_data: list[UserWithReservationData],
     all_doujin_data: list[DoujinWithReservationData],
 ):
+    """Export Comiket Bot's data.
+
+    This will generate a message that contains the total amount spent by all users and the number of items reserved.
+    A CSV that contains more detailed data will also be included.
+
+    Parameters
+    ----------
+    ctx : Context
+        Discord Context
+    all_user_data : list[UserWithReservationData]
+        The data of all users, including reservation data.
+    all_doujin_data : list[DoujinWithReservationData]
+        The data of all doujin, including reservation data.
+
+    """
     # TODO: This should be it's own database query instead of fetching everything (but this might be a bit hard with MongoDB)
     relevant_user_data = []
     for user_data in all_user_data:
@@ -160,7 +176,20 @@ async def export_doujin_data(
     await ctx.send(message, file=discord.File(csv_file_path))
 
 
-def generate_csv(all_doujin_data: list[DoujinWithReservationData]):
+def generate_csv(all_doujin_data: list[DoujinWithReservationData]) -> Path:
+    """Generate a CSV containing reservation data.
+
+    Parameters
+    ----------
+    all_doujin_data : list[DoujinWithReservationData]
+        All doujin data, with reservation data included.
+
+    Returns
+    -------
+    Path
+        Path to output file.
+
+    """
     all_usernames = set()
 
     rows = []

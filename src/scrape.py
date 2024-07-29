@@ -1,13 +1,13 @@
 """Melonbooks scraper to get images and relevant information."""
 
+from collections import namedtuple
+
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3 import PoolManager
 from urllib3.util import create_urllib3_context
-
-from collections import namedtuple
 
 
 class AddedCipherAdapter(HTTPAdapter):

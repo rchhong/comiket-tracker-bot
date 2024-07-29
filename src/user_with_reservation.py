@@ -1,7 +1,11 @@
+"""Wrapper class for User and their reservation data."""
+
 from datetime import datetime
+
+from bson.objectid import ObjectId
+
 from src.reservation import DoujinReservation
 from src.user import User
-from bson.objectid import ObjectId
 
 
 class UserWithReservationData:
@@ -15,6 +19,7 @@ class UserWithReservationData:
     If the global name is not available, the server name will be used instead.
     reservations : list of doujin reservations
     last_updated : last update to user
+
     """
 
     def __init__(self, user: User, reservations: list[DoujinReservation] = []):
@@ -22,6 +27,8 @@ class UserWithReservationData:
 
         Parameters
         ----------
+        user : User
+            User class containing all other user information
         reservations : list[Reservation]
             list of doujin reservations
 
@@ -36,18 +43,50 @@ class UserWithReservationData:
 
     @property
     def _id(self) -> ObjectId:
+        """Retrieve Id of the user.
+
+        Returns
+        -------
+        ObjectId
+            Id of the user
+
+        """
         return self.user._id
 
     @property
     def discord_id(self) -> int:
+        """Retrieve Discord Id of the user.
+
+        Returns
+        -------
+        int
+            Discord Id of user.
+
+        """
         return self.user.discord_id
 
     @property
     def name(self) -> str:
+        """Retrieve display name of the user.
+
+        Returns
+        -------
+        str
+            Display name of user.
+
+        """
         return self.user.name
 
     @property
     def last_updated(self) -> datetime:
+        """Retrieve the last updated timestamp of the user.
+
+        Returns
+        -------
+        datetime
+            Last updated timestamp of the user.
+
+        """
         return self.user.last_updated
 
     def has_reserved(self, doujin_id: ObjectId) -> bool:
@@ -64,7 +103,6 @@ class UserWithReservationData:
             Whether or not the doujin has already been reserved by the user.
 
         """
-
         doujin_ids = [x.doujin._id for x in self.reservations]
 
         return doujin_id in doujin_ids

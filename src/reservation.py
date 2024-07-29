@@ -1,12 +1,14 @@
 """Store metadata about a doujin reservation."""
 
 from datetime import datetime
+
 from src.doujin import Doujin
 from src.user import User
 
 
 class DoujinReservation:
     """Doujin Reservation Data Class.
+
     Only users will use this.
 
     Attributes
@@ -27,7 +29,6 @@ class DoujinReservation:
             When the reservation for the doujin was placed
 
         """
-
         if not isinstance(doujin, Doujin):
             raise TypeError("doujin must be a Doujin")
 
@@ -40,6 +41,7 @@ class DoujinReservation:
 
 class UserReservation:
     """User Reservation Data Class.
+
     Only Doujins will use this.
 
     Attributes
@@ -54,13 +56,12 @@ class UserReservation:
 
         Parameters
         ----------
-        doujin : Doujin
-            A doujin object
+        user : User
+            A user object
         datetime_added : datetime
             When the reservation for the doujin was placed
 
         """
-
         if not isinstance(user, User):
             raise TypeError(f"user must be a User, but user is {type(user)}")
 

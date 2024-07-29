@@ -1,18 +1,18 @@
-# Reserving a doujin should update the appropriate user and doujin reservation lists
 """Data Access Object (DAO)."""
+# pyright: ignore[reportUnreachable]
 
-from datetime import datetime, UTC
+import os
+from datetime import UTC, datetime
 
 from bson.objectid import ObjectId
+from pymongo import MongoClient
+
 from src.currency import Currency
 from src.doujin import Doujin
 from src.doujin_with_reservation import DoujinWithReservationData
+from src.reservation import DoujinReservation, UserReservation
 from src.user import User
 from src.user_with_reservation import UserWithReservationData
-from pymongo import MongoClient
-import os
-
-from src.reservation import DoujinReservation, UserReservation
 
 
 class DAO:
@@ -39,6 +39,12 @@ class DAO:
             Currency API
 
         """
+        if not isinstance(connection_str, str):
+            raise TypeError("connection_str must be a str")
+
+        if not isinstance(currency, Currency):
+            raise TypeError("current must be a Currency")
+
         self.db = MongoClient(connection_str).get_database(os.getenv("MONGO_DB_NAME"))
         self.currency = currency
 
@@ -95,7 +101,7 @@ class DAO:
             raise TypeError(
                 f"Expected 'price_in_yen' to be of type 'int', but got '{type(price_in_yen).__name__}'"
             )
-        if not (isinstance(circle_name, str) or circle_name is None):
+        if not (isinstance(circle_name, str) and circle_name is not None):
             raise TypeError(
                 f"Expected 'circle_name' to be of type 'str' or 'None', but got '{type(circle_name).__name__}'"
             )
@@ -260,6 +266,24 @@ class DAO:
     def get_doujin_by_id_with_reservation_data(
         self, doujin_id: ObjectId
     ) -> DoujinWithReservationData | None:
+        """Retrieve a doujin by id, but includes reservation data.
+
+        This is separate method in order because the reservation data isn't always needed,
+        and retrieving it is somewhat costly.
+
+
+        Parameters
+        ----------
+        doujin_id : ObjectId
+            Id of the doujin.
+
+        Returns
+        -------
+        DoujinWithReservationData | None
+            Doujin data class, with reservation data.
+            Returns None if a doujin with the Id provided was not found in the database.
+
+        """
         if not isinstance(doujin_id, ObjectId):
             raise TypeError(
                 f"Expected 'doujin_id' to be of type 'ObjectId', but got '{type(doujin_id).__name__}'"
@@ -322,6 +346,12 @@ class DAO:
             User object representing the user just added to the database.
 
         """
+        if not isinstance(discord_id, int):
+            raise TypeError("discord_id must be an int")
+
+        if not isinstance(name, str):
+            raise TypeError("name must be an str")
+
         # In the database, only need to store doujin id as reservation
         now = datetime.now(UTC)
         parameters = {
@@ -354,6 +384,9 @@ class DAO:
             If there is no user found with the given Discord Id, None will be returned.
 
         """
+        if not isinstance(discord_id, int):
+            raise TypeError("discord_id must be an int")
+
         parameters = {"discord_id": discord_id}
         user_metadata = self.db.users.find_one(parameters)
 
@@ -389,13 +422,13 @@ class DAO:
 
     def get_user_by_id(
         self,
-        _id: int,
+        _id: ObjectId,
     ) -> User | None:
         """Get a user from the database by  Id.
 
         Parameters
         ----------
-        _id : int
+        _id : ObjectId
             Id
 
         Returns
@@ -405,6 +438,8 @@ class DAO:
             If there is no user found with the given  Id, None will be returned.
 
         """
+        if not isinstance(_id, ObjectId):
+            raise TypeError("discord_id must be an ObjectId")
 
         parameters = {"_id": _id}
         user_metadata = self.db.users.find_one(parameters)
@@ -421,13 +456,13 @@ class DAO:
 
     def get_user_by_id_with_reservation_data(
         self,
-        _id: int,
+        _id: ObjectId,
     ) -> UserWithReservationData | None:
         """Get a user from the database by  Id.
 
         Parameters
         ----------
-        _id : int
+        _id : ObjectId
             Id
 
         Returns
@@ -437,6 +472,8 @@ class DAO:
             If there is no user found with the given  Id, None will be returned.
 
         """
+        if not isinstance(_id, ObjectId):
+            raise TypeError("discord_id must be an ObjectId")
 
         parameters = {"_id": _id}
         user_metadata = self.db.users.find_one(parameters)
@@ -480,17 +517,27 @@ class DAO:
 
         Parameters
         ----------
-        user : User
-            User object
-        doujin : Doujin
-            Doujin object
+        user_with_reservation_data : UserWithReservationData
+            User object, with user data
+        doujin_with_reservation_data : DoujinWithReservationData
+            Doujin object, with doujin data
 
         Returns
         -------
-        User
-            Updated user object
+        tuple[UserWithReservationData, DoujinWithReservationData]
+            Updated user object (with reservations) and doujin object (with reservations).
 
         """
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
         now = datetime.now(UTC)
 
         updated_doujin = self._add_user_reservation(
@@ -508,6 +555,19 @@ class DAO:
         doujin_with_reservation_data: DoujinWithReservationData,
         now: datetime,
     ) -> UserWithReservationData:
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
+        if not isinstance(now, datetime):
+            raise TypeError("now must be a datetime")
+
         parameters = {"_id": user_with_reservation_data._id}
         update = {
             "$push": {
@@ -537,6 +597,19 @@ class DAO:
         doujin_with_reservation_data: DoujinWithReservationData,
         now: datetime,
     ) -> DoujinWithReservationData:
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
+        if not isinstance(now, datetime):
+            raise TypeError("now must be a datetime")
+
         parameters = {"_id": doujin_with_reservation_data._id}
         update = {
             "$push": {
@@ -569,17 +642,27 @@ class DAO:
 
         Parameters
         ----------
-        user : User
-            User object
-        doujin : Doujin
-            Doujin object
+        user_with_reservation_data : UserWithReservationData
+            User object, with user data
+        doujin_with_reservation_data : DoujinWithReservationData
+            Doujin object, with doujin data
 
         Returns
         -------
-        User
-            Updated user object
+        tuple[UserWithReservationData, DoujinWithReservationData]
+            Updated user object (with reservations) and doujin object (with reservations).
 
         """
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
         now = datetime.now(UTC)
 
         updated_user = self._remove_doujin_reservation(
@@ -597,6 +680,19 @@ class DAO:
         doujin_with_reservation_data: DoujinWithReservationData,
         now: datetime,
     ) -> UserWithReservationData:
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
+        if not isinstance(now, datetime):
+            raise TypeError("now must be a datetime")
+
         parameters = {"_id": user_with_reservation_data._id}
         update = {
             "$pull": {
@@ -626,6 +722,19 @@ class DAO:
         doujin_with_reservation_data: DoujinWithReservationData,
         now: datetime,
     ) -> DoujinWithReservationData:
+        if not isinstance(user_with_reservation_data, UserWithReservationData):
+            raise TypeError(
+                "user_with_reservation_data must be a UserWithReservationData"
+            )
+
+        if not isinstance(doujin_with_reservation_data, DoujinWithReservationData):
+            raise TypeError(
+                "doujin_with_reservation_data must be a DoujinWithReservationData"
+            )
+
+        if not isinstance(now, datetime):
+            raise TypeError("now must be a datetime")
+
         parameters = {"_id": doujin_with_reservation_data._id}
         update = {
             "$pull": {
@@ -692,6 +801,14 @@ class DAO:
         return ret
 
     def retrieve_all_doujin(self) -> list[DoujinWithReservationData]:
+        """Retrieve all doujin in the database.
+
+        Returns
+        -------
+        list[DoujinWithReservationData]
+            List of all doujin, with reservation data
+
+        """
         ret = []
         for doujin_metadata in self.db.doujins.find(filter=None):
             doujin = Doujin(

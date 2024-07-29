@@ -1,6 +1,7 @@
 """Contain a wrapper class for doujin information."""
 
 from datetime import UTC, datetime
+
 from bson.objectid import ObjectId
 
 
@@ -12,6 +13,7 @@ class Doujin:
     _id : MongoDB Object ID
     title : Title of doujin
     price_in_yen : Price of doujin (in Japanese Yen)
+    price_in_usd : Price of doujin (in USD)
     is_r18 : Doujin R18?
     image_preview_url : URL of image to use as preview
     circle_name : Doujin circle name
@@ -46,8 +48,10 @@ class Doujin:
             MongoDB Object Id
         title : str
             Title of doujin
-        price_in_yen : float
+        price_in_yen : int
             Price of doujin (in Japanese Yen)
+        price_in_usd : float
+            Price of doujin (in USD)
         image_preview_url : str
             URL of image to use as preview
         url : str

@@ -6,11 +6,10 @@ import os
 import discord
 from discord.ext import commands
 
-from src.dao import DAO
 from src.currency import Currency
+from src.dao import DAO
 from src.scrape import DoujinScraper
-from src.utils import generate_doujin_embed, list_doujins, export_doujin_data
-
+from src.utils import export_doujin_data, generate_doujin_embed, list_doujins
 
 # Logger
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
@@ -49,7 +48,6 @@ async def add(ctx: commands.Context, url: str):
         Melonbooks URL to create a reservation for.
 
     """
-
     # TODO: Force updates to doujin/user metadata after a interval of time
     try:
         # Get doujin data if this is the first time
@@ -122,7 +120,6 @@ async def rm(ctx: commands.Context, url: str):
         Melonbooks URL to create a reservation for.
 
     """
-
     # TODO: Force updates to doujin/user metadata after a interval of time
     try:
         doujin = dao.get_doujin_by_url(url)
@@ -200,6 +197,14 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
 
 @bot.command(brief="Export doujin reservations to a CSV")
 async def export(ctx: commands.Context):
+    """Export doujin data into a CSV.
+
+    Parameters
+    ----------
+    ctx : commands.Context
+        Discord Context
+
+    """
     all_user_data = dao.retrieve_all_users()
     all_doujin_data = dao.retrieve_all_doujin()
 

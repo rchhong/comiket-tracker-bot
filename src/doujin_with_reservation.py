@@ -1,7 +1,11 @@
+"""Wrapper class for Doujin with Reservations."""
+
 from datetime import datetime
+
 from bson.objectid import ObjectId
-from src.reservation import UserReservation
+
 from src.doujin import Doujin
+from src.reservation import UserReservation
 
 
 class DoujinWithReservationData:
@@ -32,31 +36,12 @@ class DoujinWithReservationData:
 
         Parameters
         ----------
-        _id : ObjectId
-            MongoDB Object Id
-        title : str
-            Title of doujin
-        price_in_yen : float
-            Price of doujin (in Japanese Yen)
-        image_preview_url : str
-            URL of image to use as preview
-        url : str
-            URL of Doujin
-        is_r18 : bool
-            Doujin R18?
-        circle_name : Optional[str]
-            Doujin circle name
-        author_names : list[str]
-            Doujin author names
-        genres : list[str]
-            Doujin genre names
-        events : list[str]
-            Doujin event names
-        last_updated : datetime
-            datetime of when Doujin data was added.
+        doujin : Doujin
+            Contains all doujin information besides reservation data
+        reservations : list[UserReservation]
+            List of user reservations.
 
         """
-
         self.doujin = doujin
 
         if not isinstance(reservations, list) or not all(
@@ -68,48 +53,144 @@ class DoujinWithReservationData:
 
     @property
     def _id(self) -> ObjectId:
+        """Retrieve Id of the doujin.
+
+        Returns
+        -------
+        ObjectId
+            Id of object
+
+        """
         return self.doujin._id
 
     @property
     def title(self) -> str:
+        """Retrieve doujin title of the doujin.
+
+        Returns
+        -------
+        str
+            Title of the doujin
+
+        """
         return self.doujin.title
 
     @property
     def price_in_yen(self) -> int:
+        """Retrieve price in Japanese Yen of the doujin.
+
+        Returns
+        -------
+        int
+            Price in Japanese Yen of the doujin
+
+        """
         return self.doujin.price_in_yen
 
     @property
-    def price_in_usd(self) -> int:
+    def price_in_usd(self) -> float:
+        """Retrieve price in USD of the doujin.
+
+        Returns
+        -------
+        float
+            Price in USD of the doujin
+
+        """
         return self.doujin.price_in_usd
 
     @property
     def image_preview_url(self) -> str:
+        """Retrieve image preview URL of the doujin.
+
+        Returns
+        -------
+        str
+            Image preview URL of the doujin
+
+        """
         return self.doujin.image_preview_url
 
     @property
     def url(self) -> str:
+        """Retrieve Melonbooks URL of the doujin.
+
+        Returns
+        -------
+        str
+            Melonbooks URL of the doujin
+
+        """
         return self.doujin.url
 
     @property
     def is_r18(self) -> bool:
+        """Return whether or not the doujin is R18+ or not.
+
+        Returns
+        -------
+        bool
+            Is the doujin R18+?
+
+        """
         return self.doujin.is_r18
 
     @property
     def circle_name(self) -> str | None:
+        """Retrieve the circle name of the doujin.
+
+        Returns
+        -------
+        str | None
+            Circle name of doujin.
+
+        """
         return self.doujin.circle_name
 
     @property
     def author_names(self) -> list[str]:
+        """Retrieve the list of authors of the doujin.
+
+        Returns
+        -------
+        list[str]
+            List of authors of the doujin.
+
+        """
         return self.doujin.author_names
 
     @property
     def genres(self) -> list[str]:
+        """Retrieve the list of genres of the doujin.
+
+        Returns
+        -------
+        list[str]
+            List of genres of the doujin.
+
+        """
         return self.doujin.genres
 
     @property
     def events(self) -> list[str]:
+        """Retrieve the list of events associated with the doujin.
+
+        Returns
+        -------
+        list[str]
+            List of events associated with the doujin.
+
+        """
         return self.doujin.events
 
     @property
     def last_updated(self) -> datetime:
+        """Retrieve the last updated timestamp of the doujin object.
+
+        Returns
+        -------
+        datetime
+            Last updated timestamp of the doujin object.
+
+        """
         return self.doujin.last_updated
