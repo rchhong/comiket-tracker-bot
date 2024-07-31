@@ -199,6 +199,7 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
     else:
         discord_id = ctx.author.id
         message = "List of added Doujins"
+
     discord_id = user.id if user is not None else ctx.author.id
     reservations = []
     try:
@@ -206,6 +207,8 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
         # Creates user on first interaction
         if user_data:
             reservations = user_data.reservations
+        else:
+            reservations = []
 
     except Exception as e:
         await ctx.send(f"Error: {e}")
