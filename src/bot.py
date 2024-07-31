@@ -35,8 +35,6 @@ dao = DAO(database_url, currency)
 
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
 
-# TODO: add, show, rm should be able to take in multiple URLs/IDs and perform the operation on each one
-
 
 @bot.command(
     brief="Add reservations to doujin to the database.  Doujin can be referred to by ID or URL"
@@ -224,7 +222,7 @@ async def show(ctx: commands.Context, *args: str):
     ----------
     ctx : commands.Context
         Discord context
-    id : str
+    args : str
         List of IDs
 
     """
