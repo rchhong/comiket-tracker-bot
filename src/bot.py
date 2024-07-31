@@ -33,52 +33,68 @@ database_url = os.getenv("DATABASE_URL")
 assert database_url is not None
 dao = DAO(database_url, currency)
 
-
 bot = commands.Bot(command_prefix="!", intents=intents, log_handler=handler)
 
+# TODO: add, show, rm should be able to take in multiple URLs/IDs and perform the operation on each one
 
-@bot.command(brief="Adds a reservation to doujin to the database")
-async def add(ctx: commands.Context, url: str):
-    """Command to add a doujin reservation for a user.
+
+@bot.command(
+    brief="Add reservations to doujin to the database.  Doujin can be referred to by ID or URL"
+)
+async def add(ctx: commands.Context, *args: str):
+    """Command to add a (multiple) doujin(s) reservation for a user.
+
+    Arguments can be Melonbooks or Doujin IDs
 
     Parameters
     ----------
     ctx : commands.Context
         Discord.py command context.
-    url : str
-        Melonbooks URL to create a reservation for.
+    args : tuple(str)
+        Melonbook URL or IDS to create a reservation(s) for.
 
     """
-    # TODO: Force updates to doujin/user metadata after a interval of time
-    try:
-        # Get doujin data if this is the first time
-        doujin = dao.get_doujin_by_url(url)
-        if not doujin:
-            (
-                title,
-                price_in_yen,
-                circle_name,
-                author_names,
-                genres,
-                events,
-                is_r18,
-                image_preview_url,
-            ) = doujin_scraper.scrape_url(url)
-            doujin = dao.add_doujin(
-                url,
-                title,
-                price_in_yen,
-                circle_name,
-                author_names,
-                genres,
-                events,
-                is_r18,
-                image_preview_url,
-            )
+    to_add = []
+    for arg in args:
+        # parse URL
+        try:
+            if "melonbooks" in arg:
+                # Get doujin data if this is the first time
+                doujin = dao.get_doujin_by_url(arg)
+                if not doujin:
+                    (
+                        title,
+                        price_in_yen,
+                        circle_name,
+                        author_names,
+                        genres,
+                        events,
+                        is_r18,
+                        image_preview_url,
+                    ) = doujin_scraper.scrape_url(arg)
+                    doujin = dao.add_doujin(
+                        arg,
+                        title,
+                        price_in_yen,
+                        circle_name,
+                        author_names,
+                        genres,
+                        events,
+                        is_r18,
+                        image_preview_url,
+                    )
 
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-        raise e
+            else:
+                doujin_id = ObjectId(arg)
+                doujin = dao.get_doujin_by_id_with_reservation_data(doujin_id)
+                if doujin is None:
+                    raise Exception(f"Unable to find doujin with id {doujin_id}")
+
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
+            raise e
+
+        to_add.append(doujin)
 
     try:
         discord_id = ctx.author.id
@@ -94,6 +110,11 @@ async def add(ctx: commands.Context, url: str):
 
             user = dao.add_user(discord_id, name)
 
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
+
+    for doujin in to_add:
         if user.has_reserved(doujin._id):
             # Already reserved, print message
             message = f"<@{ctx.author.id}> has already reserved {doujin.title}"
@@ -102,33 +123,34 @@ async def add(ctx: commands.Context, url: str):
             dao.add_reservation(user, doujin)
             message = f"Added reserveration {doujin.title} for <@{ctx.author.id}>"
 
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-        raise e
-
-    await generate_doujin_embed(ctx, message, doujin)
+        await generate_doujin_embed(ctx, message, doujin)
 
 
-@bot.command(brief="Removes a reservation to doujin to the database")
-async def rm(ctx: commands.Context, url: str):
-    """Command to rm a doujin reservation for a user.
+@bot.command(
+    brief="Remove reservations to doujin to the database.  Doujin must be referred to using their ID."
+)
+async def rm(ctx: commands.Context, *args: str):
+    """Command to remove a doujin reservation for a user.
 
     Parameters
     ----------
     ctx : commands.Context
         Discord.py command context.
-    url : str
-        Melonbooks URL to create a reservation for.
+    args : tuple(str)
+        IDs to remove a reservation(s) for.
 
     """
     # TODO: Force updates to doujin/user metadata after a interval of time
-    try:
-        doujin = dao.get_doujin_by_url(url)
-        if not doujin:
-            raise Exception("Cannot remove doujin that doesn't exist in the database.")
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-        raise e
+    to_add = []
+    for arg in args:
+        try:
+            doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(arg))
+            if doujin is None:
+                raise Exception(f"Unable to find doujin with url: {arg}")
+            to_add.append(doujin)
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
+            raise e
 
     try:
         discord_id = ctx.author.id
@@ -139,21 +161,24 @@ async def rm(ctx: commands.Context, url: str):
                 "Cannot remove doujin from user that doesn't exist in the database."
             )
 
-        if not user.has_reserved(doujin._id):
-            # Already reserved, print message
-            message = (
-                f"<@{ctx.author.id}> has not reserved {doujin.title}, cannot remove."
-            )
-        else:
-            # Add reservation
-            dao.remove_reservation(user, doujin)
-            message = f"Removed reserveration {doujin.title} for <@{ctx.author.id}>"
-
     except Exception as e:
         await ctx.send(f"Error: {e}")
         raise e
 
-    await generate_doujin_embed(ctx, message, doujin)
+    try:
+        for doujin in to_add:
+            if not user.has_reserved(doujin._id):
+                # Already reserved, print message
+                message = f"<@{ctx.author.id}> has not reserved {doujin.title}, cannot remove."
+            else:
+                # Add reservation
+                dao.remove_reservation(user, doujin)
+                message = f"Removed reserveration {doujin.title} for <@{ctx.author.id}>"
+            await ctx.reply(message)
+
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+        raise e
 
 
 @bot.command(brief="Lists all doujin reservation made by the user")
@@ -192,7 +217,7 @@ async def ls(ctx: commands.Context, user: discord.Member | None = None):
 
 
 @bot.command(brief="Show doujin details given an ID")
-async def show(ctx: commands.Context, id: str):
+async def show(ctx: commands.Context, *args: str):
     """Show data related to a doujin given an Id.
 
     Parameters
@@ -200,20 +225,26 @@ async def show(ctx: commands.Context, id: str):
     ctx : commands.Context
         Discord context
     id : str
-        Id of doujin object
+        List of IDs
 
     """
-    try:
-        doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(id))
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-        raise e
-    pass
+    to_show = []
+    for arg in args:
+        try:
+            doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(arg))
+            if doujin is None:
+                raise Exception(f"Unable to find doujin with id {arg}")
 
-    if doujin is not None:
-        await generate_doujin_embed(ctx, "", doujin)
-    else:
-        await ctx.send("Error: unable to find doujin with that ID")
+            to_show.append(doujin)
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
+            raise e
+
+    for doujin in to_show:
+        if doujin is not None:
+            await generate_doujin_embed(ctx, "", doujin)
+        else:
+            await ctx.send("Error: unable to find doujin with that ID")
 
 
 @bot.command(brief="Export doujin reservations to a CSV")
