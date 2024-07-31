@@ -1,8 +1,9 @@
 services:
   bot:
     container_name: comiketbot
-    build:
+    build: 
       context: .
+      dockerfile: ./docker/local/Dockerfile
     working_dir: /app
     image: comiketbot
     command: npx nodemon run.py
@@ -11,15 +12,35 @@ services:
     volumes:
       - .:/app
     restart: on-failure
+    profiles: [local]
+
+  bot-prod:
+    container_name: comiketbot
+    build: 
+      context: .
+      dockerfile: ./docker/prod/Dockerfile
+    working_dir: /app
+    image: comiketbot
+    command: python3 run.py
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: on-failure
+    profiles: [prod]
+
   db:
     container_name: comiketbot-db
     image: mongo
     ports:
-      - 20000:27017
+      - 27017:27017
     volumes:
       - dbdata:/data/db
       - ./src/seed.js:/docker-entrypoint-initdb.d/seed.js:ro
     env_file:
       - .env
+    mem_limit: 128m
+    command: --wiredTigerCacheSizeGB 0.25
+
 volumes:
   dbdata:
