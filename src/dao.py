@@ -203,8 +203,8 @@ class DAO:
             )
 
             reservations = []
-            for reservation in doujin_metadata.reservations:
-                user = self.get_user_by_id(reservation._id)
+            for reservation in doujin_metadata["reservations"]:
+                user = self.get_user_by_id(reservation["user_id"])
                 if user is None:
                     raise Exception(
                         "User reserved Doujin without corresponding data being inserted in doujin collection."
@@ -212,7 +212,7 @@ class DAO:
 
                 else:
                     reservation = UserReservation(
-                        user=user, datetime_added=reservation.datetime_added
+                        user=user, datetime_added=reservation["datetime_added"]
                     )
                     reservations.append(reservation)
 

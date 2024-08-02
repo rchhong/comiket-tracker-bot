@@ -8,8 +8,6 @@ db.createUser({
   roles: [{ role: "readWrite", db: process.env.MONGO_DB_NAME }],
 });
 
-db = new Mongo().getDB(process.env.MONGO_DB_NAME);
-
 db.createCollection("users");
 db.createCollection("doujins");
 
