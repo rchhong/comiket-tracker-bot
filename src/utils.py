@@ -167,7 +167,7 @@ async def export_doujin_data(
 
     message = ""
     for user_data in relevant_user_data:
-        message += f"<@{user_data['discord_id']}> purchased {user_data['num_items']} for a total of ¥{user_data['total_cost_in_yen']}\n"
+        message += f"<@{user_data['discord_id']}> purchased {user_data['num_items']} for a total of ¥{user_data['total_cost_in_yen']} (${'{:.2f}'.format(user_data['total_cost_in_usd'])})\n"
 
     csv_file_path = generate_csv(all_doujin_data)
     await ctx.send(message, file=discord.File(csv_file_path))
@@ -196,7 +196,7 @@ def generate_csv(all_doujin_data: list[DoujinWithReservationData]) -> Path:
             "url": doujin.url,
             "title": doujin.title,
             "price_in_yen": doujin.price_in_yen,
-            "price_in_usd": doujin.price_in_usd,
+            "price_in_usd": "{:.2f}".format(doujin.price_in_usd),
         }
 
         for reservation in doujin.reservations:
