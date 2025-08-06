@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
-
 from src.reservation import DoujinReservation
 from src.user import User
 
@@ -42,7 +40,7 @@ class UserWithReservationData:
         self.reservations = reservations
 
     @property
-    def _id(self) -> ObjectId:
+    def id(self) -> int:
         """Retrieve Id of the user.
 
         Returns
@@ -51,7 +49,7 @@ class UserWithReservationData:
             Id of the user
 
         """
-        return self.user._id
+        return self.user.id or -1
 
     @property
     def discord_id(self) -> int:
@@ -89,7 +87,7 @@ class UserWithReservationData:
         """
         return self.user.last_updated
 
-    def has_reserved(self, doujin_id: ObjectId) -> bool:
+    def has_reserved(self, doujin_id: int) -> bool:
         """Check whether or not a doujin has already been reserved by the user.
 
         Parameters
@@ -103,6 +101,6 @@ class UserWithReservationData:
             Whether or not the doujin has already been reserved by the user.
 
         """
-        doujin_ids = [x.doujin._id for x in self.reservations]
+        doujin_ids = [x.doujin.id for x in self.reservations]
 
         return doujin_id in doujin_ids

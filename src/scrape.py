@@ -43,7 +43,7 @@ class AddedCipherAdapter(HTTPAdapter):
             num_pools=connections,
             maxsize=maxsize,
             block=block,
-            ssl_context=ctx,
+            ssl_context=None,
             **pool_kwargs,
         )
 
@@ -113,7 +113,7 @@ class DoujinScraper:
             raise ValueError("title cannot be None")
 
         price_in_yen = None
-        price_in_yen_text = soup.find("span", {"class": "yen"})
+        price_in_yen_text = soup.find("span", {"class": "price--value"})
         if price_in_yen_text is not None:
             price_in_yen = int(
                 price_in_yen_text.get_text().strip()[1:].replace(",", "")

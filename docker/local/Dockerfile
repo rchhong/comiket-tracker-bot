@@ -2,6 +2,7 @@
 
 FROM nikolaik/python-nodejs:latest
 
+RUN apt-get update && apt-get install -y ca-certificates
 
 WORKDIR /app
 

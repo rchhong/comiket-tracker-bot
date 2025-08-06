@@ -46,7 +46,7 @@ async def generate_doujin_embed(
 
     embed.add_field(name="R18?", value="Yes" if doujin.is_r18 else "No", inline=True)
     embed.add_field(name="Genre", value=",".join(doujin.genres), inline=False)
-    embed.add_field(name="Id", value=doujin._id, inline=False)
+    embed.add_field(name="Id", value=doujin.id, inline=False)
 
     await ctx.reply(message, embed=embed)
 
@@ -88,7 +88,7 @@ async def list_doujins(
 
         url = doujin.url
         title = doujin.title
-        line = f'{index + 1}. ¥{doujin.price_in_yen} (${'{:.2f}'.format(doujin.price_in_usd)}) - [{title[:10] + "..." if len(title) > 12 else title}]({url}) ({doujin._id})\n'
+        line = f'{index + 1}. ¥{doujin.price_in_yen} (${'{:.2f}'.format(doujin.price_in_usd)}) - [{title[:10] + "..." if len(title) > 12 else title}]({url}) ({doujin.id})\n'
 
         price_yen_total += doujin.price_in_yen
         price_usd_total += doujin.price_in_usd
@@ -192,7 +192,7 @@ def generate_csv(all_doujin_data: list[DoujinWithReservationData]) -> Path:
     rows = []
     for doujin in all_doujin_data:
         row = {
-            "doujin_id": doujin._id,
+            "doujin_id": doujin.id,
             "url": doujin.url,
             "title": doujin.title,
             "price_in_yen": doujin.price_in_yen,

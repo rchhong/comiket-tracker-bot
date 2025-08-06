@@ -29,18 +29,18 @@ services:
     restart: on-failure
     profiles: [prod]
 
-  db:
-    container_name: comiketbot-db
-    image: mongo
-    ports:
-      - 27017:27017
-    volumes:
-      - dbdata:/data/db
-      - ./src/seed.js:/docker-entrypoint-initdb.d/seed.js:ro
-    env_file:
-      - .env
-    mem_limit: 128m
-    command: --wiredTigerCacheSizeGB 0.25
+  # db:
+  #   container_name: comiketbot-db
+  #   image: mongo
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - dbdata:/data/db
+  #     - ./src/seed.js:/docker-entrypoint-initdb.d/seed.js:ro
+  #   env_file:
+  #     - .env
+  #   mem_limit: 128m
+  #   command: --wiredTigerCacheSizeGB 0.25
 
 volumes:
   dbdata:
