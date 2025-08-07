@@ -2,8 +2,8 @@
 
 from datetime import UTC, datetime
 
-from bson.objectid import ObjectId
-
+import sqlite3
+from src.db import with_cursor
 
 class Doujin:
     """Wrapper class for attributes of a doujin.
@@ -25,9 +25,10 @@ class Doujin:
 
     """
 
+    id = -1
+
     def __init__(
         self,
-        _id: ObjectId,
         title: str,
         price_in_yen: int,
         price_in_usd: float,
@@ -44,8 +45,6 @@ class Doujin:
 
         Parameters
         ----------
-        _id : ObjectId
-            MongoDB Object Id
         title : str
             Title of doujin
         price_in_yen : int
@@ -70,9 +69,6 @@ class Doujin:
             datetime of when Doujin data was added.
 
         """
-        if not isinstance(_id, ObjectId):
-            raise TypeError("_id must be a ObjectId")
-
         if not isinstance(title, str):
             raise TypeError("title must be a string")
 
@@ -90,9 +86,6 @@ class Doujin:
 
         if not isinstance(is_r18, bool):
             raise TypeError("is_r18 must be a boolean")
-
-        if _id is not None and not isinstance(_id, ObjectId):
-            raise TypeError("_id must be an ObjectId or None")
 
         if circle_name is not None and not isinstance(circle_name, str):
             raise TypeError("circle_name must be a string or None")
@@ -115,7 +108,7 @@ class Doujin:
         if not isinstance(last_updated, datetime):
             raise TypeError("last_updated must be a string")
 
-        self._id = _id
+        self.id = -1
         self.title = title
         self.price_in_yen = price_in_yen
         self.price_in_usd = price_in_usd
@@ -127,3 +120,71 @@ class Doujin:
         self.author_names = author_names
         self.genres = genres
         self.events = events
+
+    @with_cursor
+    def save(self, cursor: sqlite3.Cursor):
+        """Save the doujin to the SQLite database."""
+        cursor.execute('''
+        INSERT OR REPLACE INTO doujin (
+            title, price_in_yen, price_in_usd, is_r18, image_preview_url, url,
+            last_updated, circle_name, author_names, genres, events
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            self.title, self.price_in_yen, self.price_in_usd, self.is_r18,
+            self.image_preview_url, self.url, self.last_updated.isoformat(),
+            self.circle_name, ','.join(self.author_names), ','.join(self.genres),
+            ','.join(self.events)
+        ))
+        if cursor.lastrowid is not None:
+            self.id = cursor.lastrowid
+
+    @staticmethod
+    @with_cursor
+    def find_by_url(url: str, cursor: sqlite3.Cursor):
+        """Retrieve a Doujin object from the SQLite database by URL."""
+        cursor.execute('SELECT * FROM doujin WHERE url = ?', (url,))
+        row = cursor.fetchone()
+        if row: 
+            doujin = Doujin(
+                title=row[1],
+                price_in_yen=row[2],
+                price_in_usd=row[3],
+                is_r18=bool(row[4]),
+                image_preview_url=row[5],
+                url=row[6],
+                last_updated=datetime.fromisoformat(row[7]),
+                circle_name=row[8],
+                author_names=row[9].split(',') if row[9] else [],
+                genres=row[10].split(',') if row[10] else [],
+                events=row[11].split(',') if row[11] else [],
+            )
+            doujin.id = row[0]
+            return doujin
+        return None
+
+    @staticmethod
+    @with_cursor 
+    def find_by_id(_id: int, cursor: sqlite3.Cursor): 
+        """Retrieve a Doujin object from the SQLite database by ID."""
+        cursor.execute('SELECT * FROM doujin WHERE _id = ?', (_id,))
+        row = cursor.fetchone()
+        if row:
+            doujin = Doujin(
+                title=row[1],
+                price_in_yen=row[2],
+                price_in_usd=row[3],
+                is_r18=bool(row[4]),
+                image_preview_url=row[5],
+                url=row[6],
+                last_updated=datetime.fromisoformat(row[7]),
+                circle_name=row[8],
+                author_names=row[9].split(',') if row[9] else [],
+                genres=row[10].split(',') if row[10] else [],
+                events=row[11].split(',') if row[11] else [],
+            )
+            doujin.id = _id
+            return doujin
+        return None
+
+
+

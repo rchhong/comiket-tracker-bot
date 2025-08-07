@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-from bson.objectid import ObjectId
-
 from src.doujin import Doujin
 from src.reservation import UserReservation
 
@@ -13,7 +11,7 @@ class DoujinWithReservationData:
 
     Attributes
     ----------
-    _id : MongoDB Object ID
+    id : primary ID
     title : Title of doujin
     price_in_yen : Price of doujin (in Japanese Yen)
     is_r18 : Doujin R18?
@@ -52,7 +50,7 @@ class DoujinWithReservationData:
         self.reservations = reservations
 
     @property
-    def _id(self) -> ObjectId:
+    def id(self) -> int:
         """Retrieve Id of the doujin.
 
         Returns
@@ -61,7 +59,7 @@ class DoujinWithReservationData:
             Id of object
 
         """
-        return self.doujin._id
+        return self.doujin.id
 
     @property
     def title(self) -> str:

@@ -2,15 +2,16 @@
 
 import logging
 import os
+import sqlite3
 
 import discord
-from bson.objectid import ObjectId
 from discord.ext import commands
 
 from src.currency import Currency
 from src.dao import DAO
 from src.scrape import DoujinScraper
 from src.utils import export_doujin_data, generate_doujin_embed, list_doujins
+from src.db import with_cursor, GLOBAL_SQLITE_CONN
 
 # Logger
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
@@ -83,7 +84,7 @@ async def add(ctx: commands.Context, *args: str):
                     )
 
             else:
-                doujin_id = ObjectId(arg)
+                doujin_id = int(arg)
                 doujin = dao.get_doujin_by_id_with_reservation_data(doujin_id)
                 if doujin is None:
                     raise Exception(f"Unable to find doujin with id {doujin_id}")
@@ -113,7 +114,7 @@ async def add(ctx: commands.Context, *args: str):
         raise e
 
     for doujin in to_add:
-        if user.has_reserved(doujin._id):
+        if user.has_reserved(doujin.id):
             # Already reserved, print message
             message = f"<@{ctx.author.id}> has already reserved {doujin.title}"
         else:
@@ -142,7 +143,7 @@ async def rm(ctx: commands.Context, *args: str):
     to_add = []
     for arg in args:
         try:
-            doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(arg))
+            doujin = dao.get_doujin_by_id_with_reservation_data(int(arg))
             if doujin is None:
                 raise Exception(f"Unable to find doujin with url: {arg}")
             to_add.append(doujin)
@@ -165,7 +166,7 @@ async def rm(ctx: commands.Context, *args: str):
 
     try:
         for doujin in to_add:
-            if not user.has_reserved(doujin._id):
+            if not user.has_reserved(doujin.id):
                 # Already reserved, print message
                 message = f"<@{ctx.author.id}> has not reserved {doujin.title}, cannot remove."
             else:
@@ -232,7 +233,7 @@ async def show(ctx: commands.Context, *args: str):
     to_show = []
     for arg in args:
         try:
-            doujin = dao.get_doujin_by_id_with_reservation_data(ObjectId(arg))
+            doujin = dao.get_doujin_by_id_with_reservation_data(int(arg))
             if doujin is None:
                 raise Exception(f"Unable to find doujin with id {arg}")
 
@@ -248,17 +249,17 @@ async def show(ctx: commands.Context, *args: str):
             await ctx.send("Error: unable to find doujin with that ID")
 
 
-@bot.command(brief="Export doujin reservations to a CSV")
-async def export(ctx: commands.Context):
-    """Export doujin data into a CSV.
+# @bot.command(brief="Export doujin reservations to a CSV")
+# async def export(ctx: commands.Context):
+#     """Export doujin data into a CSV.
 
-    Parameters
-    ----------
-    ctx : commands.Context
-        Discord Context
+#     Parameters
+#     ----------
+#     ctx : commands.Context
+#         Discord Context
 
-    """
-    all_user_data = dao.retrieve_all_users()
-    all_doujin_data = dao.retrieve_all_doujin()
+#     """
+#     all_user_data = dao.retrieve_all_users()
+#     all_doujin_data = dao.retrieve_all_doujin()
 
-    await export_doujin_data(ctx, all_user_data, all_doujin_data)
+#     await export_doujin_data(ctx, all_user_data, all_doujin_data)
