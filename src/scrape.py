@@ -116,7 +116,7 @@ class DoujinScraper:
         price_in_yen_text = soup.find("span", {"class": "price--value"})
         if price_in_yen_text is not None:
             price_in_yen = int(
-                price_in_yen_text.get_text().strip()[1:].replace(",", "")
+                price_in_yen_text.get_text().replace(",", "")
             )
         else:
             raise ValueError("price_in_yen cannot be None")
